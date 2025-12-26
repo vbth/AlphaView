@@ -59,7 +59,7 @@ export function renderChart(canvasId, rawData, range = '1y') {
                 pointHoverRadius: 6,
                 fill: true,
                 tension: 0.1,
-                spanGaps: true // WICHTIG: Verbindet Linien bei fehlenden Daten
+                spanGaps: true // WICHTIG: Verbindet Linien bei fehlenden Daten (Lückenfüller)
             }]
         },
         options: {

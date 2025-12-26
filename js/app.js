@@ -1,6 +1,6 @@
 /**
  * AlphaView Main Controller
- * Final Version: All Intervals & Full UI
+ * Fixed: Syntax Error & Range Passing
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -197,19 +197,20 @@ async function loadChartForModal(symbol, requestedRange) {
         // Smart Intervals
         if (requestedRange === '1d') interval = '5m';
         else if (requestedRange === '5d') interval = '15m';
-        else if (requestedRange === '1mo' || requestedRange === '3mo') interval = '1d'; // Daily ist stabiler als hourly
+        else if (requestedRange === '1mo' || requestedRange === '3mo') interval = '1d';
         else if (requestedRange === '5y' || requestedRange === '10y') interval = '1wk';
         else if (requestedRange === 'max') interval = '1mo';
 
         const rawData = await fetchChartData(symbol, requestedRange, interval);
         if(rawData) {
-            // WICHTIG: requestedRange weitergeben!
-            renderChart(canvasId, rawData, requestedRange);
+            renderChart(canvasId, rawData, requestedRange); // WICHTIG: range weitergeben
 
             if(rawData.meta) {
                 if(modalExchange) modalExchange.textContent = rawData.meta.exchangeName || rawData.meta.exchangeTimezoneName || 'N/A';
+                
                 const rawType = rawData.meta.instrumentType || 'EQUITY';
                 if(modalType) modalType.textContent = TYPE_TRANSLATIONS[rawType] || rawType;
+                
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if(modalFullname) modalFullname.textContent = fullName; 
             }
