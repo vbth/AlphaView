@@ -1,6 +1,6 @@
 /**
  * App Module
- * Added: Export & Import Logic in DOMContentLoaded
+ * Main Controller: Coordinates Logic, UI, and Events.
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -224,38 +224,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSearch();
     loadDashboard();
 
-    // EXPORT / IMPORT LOGIC
+    // --- NEU: EXPORT / IMPORT LOGIK ---
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const importInput = document.getElementById('import-input');
 
+    // 1. Export
     if(exportBtn) {
         exportBtn.addEventListener('click', () => {
             const data = localStorage.getItem('alphaview_portfolio');
-            if(!data) { alert('Depot ist leer.'); return; }
+            if(!data || data === '[]') { alert('Dein Depot ist leer. Nichts zu sichern.'); return; }
+            
+            // Datei erzeugen
             const blob = new Blob([data], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
+            
+            // Download simulieren
             const a = document.createElement('a');
             a.href = url;
-            a.download = `alphaview_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `alphaview_depot_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         });
     }
 
+    // 2. Import
     if(importBtn && importInput) {
-        importBtn.addEventListener('click', () => importInput.click());
+        importBtn.addEventListener('click', () => {
+            // Bestätigung, wenn Daten vorhanden sind
+            if(localStorage.getItem('alphaview_portfolio') && localStorage.getItem('alphaview_portfolio') !== '[]') {
+                if(!confirm('Achtung: Dies überschreibt dein aktuelles Depot! Fortfahren?')) return;
+            }
+            importInput.click();
+        });
+
         importInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(!file) return;
+
             const reader = new FileReader();
             reader.onload = (event) => {
                 try {
                     const json = JSON.parse(event.target.result);
+                    // Validierung: Ist es ein Array?
                     if(Array.isArray(json)) {
                         localStorage.setItem('alphaview_portfolio', JSON.stringify(json));
-                        location.reload();
-                    } else { alert('Ungültiges Dateiformat. JSON-Array erwartet.'); }
-                } catch(err) { alert('Fehler beim Lesen der Datei.'); console.error(err); }
+                        alert('Depot erfolgreich importiert!');
+                        location.reload(); // Seite neu laden
+                    } else {
+                        alert('Fehler: Die Datei enthält kein gültiges Depot-Format.');
+                    }
+                } catch(err) {
+                    alert('Fehler beim Lesen der Datei. Ist es eine gültige JSON?');
+                    console.error(err);
+                }
             };
             reader.readAsText(file);
         });

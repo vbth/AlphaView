@@ -1,6 +1,6 @@
 <!--
  * AlphaView Entry Point
- * Added: Export/Import Buttons in Footer
+ * Includes Footer with Import/Export Buttons
 -->
 <!DOCTYPE html>
 <html lang="de" class="antialiased">
@@ -86,17 +86,17 @@
         </div>
     </div>
 
-    <!-- FOOTER WITH DATA TOOLS -->
+    <!-- FOOTER: HIER SIND DIE BUTTONS -->
     <footer class="bg-white dark:bg-dark-surface border-t border-slate-200 dark:border-slate-700 py-8 mt-auto">
         <div class="max-w-7xl mx-auto px-4 flex flex-col items-center gap-4">
             
-            <!-- Export/Import Buttons -->
+            <!-- BACKUP BUTTONS -->
             <div class="flex gap-4">
                 <button id="export-btn" class="text-xs font-medium text-slate-500 hover:text-primary dark:hover:text-neon-accent transition-colors flex items-center gap-2 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <i class="fa-solid fa-download"></i> Depot exportieren (JSON)
+                    <i class="fa-solid fa-download"></i> Depot sichern
                 </button>
                 <button id="import-btn" class="text-xs font-medium text-slate-500 hover:text-primary dark:hover:text-neon-accent transition-colors flex items-center gap-2 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <i class="fa-solid fa-upload"></i> Depot importieren
+                    <i class="fa-solid fa-upload"></i> Depot laden
                 </button>
                 <input type="file" id="import-input" class="hidden" accept=".json">
             </div>
@@ -109,6 +109,6 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module" src="js/app.js?v=35"></script>
+    <script type="module" src="js/app.js?v=Final35"></script>
 </body>
 </html>
