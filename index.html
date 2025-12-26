@@ -29,7 +29,12 @@
             }
         }
     </script>
-    <style>body { transition: background-color 0.3s ease, color 0.3s ease; }</style>
+    <style>
+        body { transition: background-color 0.3s ease, color 0.3s ease; }
+        /* Hide Scrollbar for Button List */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-dark-bg dark:text-slate-100 flex flex-col min-h-screen">
 
@@ -103,7 +108,7 @@
                                     </div>
                                 </div>
                                 
-                                <!-- TIME RANGE BUTTONS -->
+                                <!-- TIME RANGE BUTTONS (ALLE ENTHALTEN) -->
                                 <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg mt-4 md:mt-0 overflow-x-auto max-w-full gap-1 no-scrollbar" id="chart-controls">
                                     <button data-range="1d" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">1T</button>
                                     <button data-range="5d" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">1W</button>
@@ -113,6 +118,8 @@
                                     <button data-range="5y" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">5J</button>
                                     <button data-range="max" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">MAX</button>
                                 </div>
+                            </div>
+
                             <!-- Chart Container -->
                             <div class="mt-2 w-full h-[450px] relative">
                                 <canvas id="main-chart"></canvas>
@@ -134,7 +141,7 @@
     <!-- Libs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- APP ENTRY POINT (Version Final) -->
-    <script type="module" src="js/app.js?v=19"></script>
+    <!-- APP ENTRY POINT (Version 20) -->
+    <script type="module" src="js/app.js?v=20"></script>
 </body>
 </html>
