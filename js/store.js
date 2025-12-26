@@ -1,50 +1,47 @@
-/**
- * Store Module
- * Manages the Portfolio/Watchlist in LocalStorage.
- */
-
 const STORAGE_KEY = 'alphaview_portfolio';
 
-// Initiale Datenstruktur laden oder erstellen
 function getPortfolio() {
     const json = localStorage.getItem(STORAGE_KEY);
-    return json ? JSON.parse(json) : []; // Array von Symbol-Strings ['AAPL', 'MSFT']
+    if (!json) return [];
+    let data = JSON.parse(json);
+
+    // Migration alter Daten (String-Array -> Objekt-Array)
+    if (data.length > 0 && typeof data[0] === 'string') {
+        data = data.map(symbol => ({ symbol: symbol, qty: 0 }));
+        savePortfolio(data);
+    }
+    return data;
 }
 
 function savePortfolio(portfolio) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
 }
 
-/**
- * Fügt ein Symbol zur Watchlist hinzu.
- * Verhindert Duplikate.
- */
+export function getWatchlist() {
+    return getPortfolio();
+}
+
 export function addSymbol(symbol) {
     const portfolio = getPortfolio();
     const upperSymbol = symbol.toUpperCase();
-    
-    if (!portfolio.includes(upperSymbol)) {
-        portfolio.push(upperSymbol);
+    if (!portfolio.find(p => p.symbol === upperSymbol)) {
+        portfolio.push({ symbol: upperSymbol, qty: 0 });
         savePortfolio(portfolio);
-        return true; // Added
+        return true;
     }
-    return false; // Already exists
+    return false;
 }
 
-/**
- * Entfernt ein Symbol aus der Watchlist.
- */
 export function removeSymbol(symbol) {
-    let portfolio = getPortfolio();
-    const upperSymbol = symbol.toUpperCase();
-    
-    const newPortfolio = portfolio.filter(s => s !== upperSymbol);
+    const newPortfolio = getPortfolio().filter(p => p.symbol !== symbol);
     savePortfolio(newPortfolio);
 }
 
-/**
- * Gibt die aktuelle Watchlist zurück.
- */
-export function getWatchlist() {
-    return getPortfolio();
+export function updateQuantity(symbol, quantity) {
+    let portfolio = getPortfolio();
+    const item = portfolio.find(p => p.symbol === symbol);
+    if (item) {
+        item.qty = parseFloat(quantity) || 0;
+        savePortfolio(portfolio);
+    }
 }

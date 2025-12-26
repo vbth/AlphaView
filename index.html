@@ -33,13 +33,10 @@
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-dark-bg dark:text-slate-100 flex flex-col min-h-screen">
 
-    <!-- Global Error Handler -->
+    <!-- Error Handler -->
     <script>
         window.addEventListener('error', function(event) {
-            const root = document.getElementById('app-root');
-            if(root && !document.getElementById('chart-modal').classList.contains('hidden')) return; // Ignore errors inside modal
-             // Nur anzeigen wenn kritisch
-             console.error(event.error);
+            console.error(event.error);
         });
     </script>
 
@@ -69,7 +66,7 @@
         </div>
     </main>
 
-<!-- DETAIL MODAL -->
+    <!-- DETAIL MODAL -->
     <div id="chart-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm transition-opacity"></div>
 
@@ -87,7 +84,7 @@
                     <!-- Content -->
                     <div class="px-6 pb-6 pt-6">
                         <div class="w-full">
-                            <!-- Header: Metadata & Title -->
+                            <!-- Header -->
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
                                 <div>
                                     <h3 class="text-2xl font-bold text-slate-900 dark:text-white leading-tight" id="modal-fullname">
@@ -106,15 +103,13 @@
                                     </div>
                                 </div>
                                 
-                                <!-- TIME RANGE BUTTONS (German) -->
+                                <!-- TIME RANGE BUTTONS -->
                                 <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg mt-4 md:mt-0 overflow-x-auto max-w-full" id="chart-controls">
-                                    <button data-range="5d" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">1W</button>
-                                    <button data-range="1mo" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">1M</button>
-                                    <button data-range="3mo" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">3M</button>
-                                    <button data-range="1y" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-600 text-primary dark:text-white shadow-sm transition-all whitespace-nowrap">1J</button>
-                                    <button data-range="5y" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">3J</button>
-                                    <button data-range="10y" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">6J</button>
-                                    <button data-range="max" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">MAX</button>
+                                    <button data-range="1y" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-600 text-primary dark:text-white shadow-sm transition-all whitespace-nowrap">1J</button>
+                                    <button data-range="2y" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">2J</button>
+                                    <button data-range="5y" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">5J</button>
+                                    <button data-range="10y" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">10J</button>
+                                    <button data-range="max" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">MAX</button>
                                 </div>
                             </div>
 
@@ -128,6 +123,7 @@
             </div>
         </div>
     </div>
+
     <!-- FOOTER -->
     <footer class="bg-white dark:bg-dark-surface border-t border-slate-200 dark:border-slate-700 py-6">
         <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400">
@@ -138,7 +134,7 @@
     <!-- Libs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- APP ENTRY POINT (VERSION 5 GEGEN CACHE) -->
-    <script type="module" src="js/app.js?v=7"></script>
+    <!-- APP ENTRY POINT (Version Final) -->
+    <script type="module" src="js/app.js?v=Final"></script>
 </body>
 </html>

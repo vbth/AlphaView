@@ -1,64 +1,56 @@
-/**
- * UI Module
- * Handles DOM rendering for Dashboard and Search.
- */
+export const formatMoney = (val, currency) => {
+    const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
+};
 
-// Format Helpers
-const formatMoney = (val, currency) => new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(val);
 const formatPercent = (val) => `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
 
-/**
- * Rendert das Hauptgerüst (Suchleiste + Grid Container)
- */
 export function renderAppSkeleton(container) {
     container.innerHTML = `
-        <!-- Search Section -->
+        <!-- PORTFOLIO HEADER -->
+        <div id="portfolio-summary" class="hidden mb-8 bg-white dark:bg-dark-surface rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h2 class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gesamtdepotwert</h2>
+                <div class="text-3xl font-bold text-slate-900 dark:text-white mt-1" id="total-balance">---</div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-slate-500">Positionen</div>
+                <div class="text-xl font-mono font-medium dark:text-slate-200" id="total-positions">0</div>
+            </div>
+        </div>
+
+        <!-- SEARCH -->
         <div class="mb-8 relative max-w-xl mx-auto">
             <div class="relative">
-                <input type="text" id="search-input" 
-                    class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg pl-12 pr-4 py-3 shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                    placeholder="Symbol suchen (z.B. MSFT, TSLA, BTC-USD)..." autocomplete="off">
+                <input type="text" id="search-input" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg pl-12 pr-4 py-3 shadow-sm focus:ring-2 focus:ring-primary outline-none" placeholder="Symbol suchen (z.B. SAP.DE, TSLA)..." autocomplete="off">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-400"></i>
-                <div id="search-spinner" class="hidden absolute right-4 top-3.5">
-                    <i class="fa-solid fa-circle-notch fa-spin text-primary"></i>
-                </div>
+                <div id="search-spinner" class="hidden absolute right-4 top-3.5"><i class="fa-solid fa-circle-notch fa-spin text-primary"></i></div>
             </div>
-            <!-- Search Results Dropdown -->
             <div id="search-results" class="hidden absolute w-full bg-white dark:bg-slate-800 mt-2 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden max-h-80 overflow-y-auto"></div>
         </div>
 
-        <!-- Dashboard Grid -->
-        <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Cards will be injected here -->
-        </div>
+        <!-- GRID -->
+        <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         
-        <!-- Empty State (hidden by default) -->
+        <!-- EMPTY STATE -->
         <div id="empty-state" class="hidden text-center py-12">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
-                <i class="fa-solid fa-layer-group text-slate-400 text-2xl"></i>
-            </div>
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 mb-4"><i class="fa-solid fa-layer-group text-slate-400 text-2xl"></i></div>
             <h3 class="text-lg font-medium text-slate-900 dark:text-white">Watchlist leer</h3>
-            <p class="text-slate-500 max-w-sm mx-auto mt-2">Suche oben nach Symbolen, um dein Dashboard aufzubauen.</p>
+            <p class="text-slate-500 max-w-sm mx-auto mt-2">Suche oben nach Symbolen.</p>
         </div>
     `;
 }
 
-/**
- * Rendert eine einzelne Aktien-Karte (HTML String)
- */
-export function createStockCardHTML(data) {
+export function createStockCardHTML(data, qty, totalPortfolioValue) {
     const isUp = data.change >= 0;
     const colorClass = isUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
     const trendIcon = data.trend === 'bullish' ? 'fa-arrow-trend-up' : (data.trend === 'bearish' ? 'fa-arrow-trend-down' : 'fa-minus');
-    const trendColor = data.trend === 'bullish' ? 'text-green-500' : (data.trend === 'bearish' ? 'text-red-500' : 'text-yellow-500');
+    const positionValue = data.price * qty;
+    const weightPercent = totalPortfolioValue > 0 ? (positionValue / totalPortfolioValue) * 100 : 0;
 
     return `
         <div class="stock-card group relative bg-white dark:bg-dark-surface rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-primary/50 dark:hover:border-neon-accent/50 transition-all duration-300 cursor-pointer overflow-hidden" data-symbol="${data.symbol}">
-            
-            <!-- Remove Button (Top Right) -->
-            <button class="delete-btn absolute top-2 right-2 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10" data-symbol="${data.symbol}" title="Entfernen">
-                <i class="fa-solid fa-times"></i>
-            </button>
+            <button class="delete-btn absolute top-2 right-2 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10" data-symbol="${data.symbol}"><i class="fa-solid fa-times"></i></button>
 
             <div class="p-5">
                 <div class="flex justify-between items-start mb-4">
@@ -69,54 +61,42 @@ export function createStockCardHTML(data) {
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="text-xl font-bold font-mono text-slate-900 dark:text-slate-100">
-                            ${formatMoney(data.price, data.currency)}
-                        </div>
-                        <div class="text-sm font-medium font-mono ${colorClass}">
-                            ${formatPercent(data.changePercent)}
-                        </div>
+                        <div class="text-xl font-bold font-mono text-slate-900 dark:text-slate-100">${formatMoney(data.price, data.currency)}</div>
+                        <div class="text-sm font-medium font-mono ${colorClass}">${formatPercent(data.changePercent)}</div>
                     </div>
                 </div>
 
-                <!-- Mini Metrics -->
-                <div class="grid grid-cols-2 gap-2 pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
-                            <i class="fa-solid ${trendIcon} ${trendColor} text-xs"></i>
-                        </div>
-                        <div class="text-xs">
-                            <div class="text-slate-500">Trend</div>
-                            <div class="font-medium dark:text-slate-300 capitalize">${data.trend}</div>
-                        </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 mb-4 border border-slate-100 dark:border-slate-700" onclick="event.stopPropagation()">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs text-slate-500 uppercase font-semibold">Menge</label>
+                        <input type="number" min="0" step="any" class="qty-input w-20 text-right text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 focus:ring-2 focus:ring-primary outline-none" value="${qty}" data-symbol="${data.symbol}" placeholder="0">
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
-                            <i class="fa-solid fa-bolt text-slate-400 text-xs"></i>
-                        </div>
-                        <div class="text-xs">
-                            <div class="text-slate-500">Volatilität</div>
-                            <div class="font-medium dark:text-slate-300 font-mono">${data.volatility.toFixed(1)}%</div>
-                        </div>
+                    <div class="flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-2">
+                        <div class="text-xs text-slate-500">Wert</div>
+                        <div class="font-mono font-bold text-slate-900 dark:text-white">${formatMoney(positionValue, data.currency)}</div>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <div class="text-xs text-slate-500">Anteil</div>
+                        <div class="text-xs font-mono text-slate-400">${weightPercent.toFixed(1)}%</div>
                     </div>
                 </div>
+
+                <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <div class="flex items-center gap-1"><i class="fa-solid ${trendIcon}"></i> ${data.trend}</div>
+                    <div>Vol: ${data.volatility.toFixed(1)}%</div>
+                </div>
             </div>
-            
-            <!-- Bottom Decoration Line -->
             <div class="h-1 w-full ${isUp ? 'bg-green-500' : 'bg-red-500'}"></div>
         </div>
     `;
 }
 
-/**
- * Rendert Suchergebnisse
- */
 export function renderSearchResults(results, container) {
     if (results.length === 0) {
-        container.innerHTML = `<div class="p-4 text-sm text-slate-500 text-center">Keine Ergebnisse gefunden</div>`;
+        container.innerHTML = `<div class="p-4 text-sm text-slate-500 text-center">Keine Ergebnisse</div>`;
         container.classList.remove('hidden');
         return;
     }
-
     container.innerHTML = results.map(item => `
         <div class="search-item px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors" data-symbol="${item.symbol}">
             <div class="flex justify-between items-center">
@@ -124,12 +104,9 @@ export function renderSearchResults(results, container) {
                     <div class="font-bold text-slate-900 dark:text-white text-sm">${item.symbol}</div>
                     <div class="text-xs text-slate-500 truncate max-w-[200px]">${item.name}</div>
                 </div>
-                <div class="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-1 rounded">
-                    ${item.exchange}
-                </div>
+                <div class="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-1 rounded">${item.exchange}</div>
             </div>
         </div>
     `).join('');
-    
     container.classList.remove('hidden');
 }
