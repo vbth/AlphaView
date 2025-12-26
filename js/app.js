@@ -1,12 +1,11 @@
 /**
  * App Module
- * Main Controller: Coordinates Logic, UI, and Events.
- * Updated: Copy Title "DEPOT-ZUSAMMENSETZUNG" (no colon, with hyphen)
+ * Fixed: Argument order for createStockCardHTML (URL passed correctly)
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
 import { analyze } from './analysis.js';
-import { getWatchlist, addSymbol, removeSymbol, updateQuantity } from './store.js';
+import { getWatchlist, addSymbol, removeSymbol, updateQuantity, updateUrl } from './store.js';
 import { renderAppSkeleton, createStockCardHTML, renderSearchResults, formatMoney } from './ui.js';
 import { renderChart } from './charts.js';
 
@@ -49,7 +48,8 @@ async function loadDashboard() {
                 const rawData = await fetchChartData(item.symbol, '1y', '1d');
                 if (!rawData) return null;
                 const analysis = analyze(rawData);
-                analysis.qty = item.qty; 
+                analysis.qty = item.qty;
+                analysis.url = item.url; // URL sichern
                 return analysis;
             } catch (e) { return null; }
         });
@@ -81,7 +81,10 @@ function renderDashboardGrid() {
     if(totalEurEl) totalEurEl.textContent = formatMoney(totalEUR, 'EUR');
     if(totalUsdEl) totalUsdEl.textContent = formatMoney(totalUSD, 'USD');
     if(totalPosEl) totalPosEl.textContent = state.dashboardData.length;
-    gridEl.innerHTML = state.dashboardData.map(data => createStockCardHTML(data, data.qty, totalEUR, state.eurUsdRate)).join('');
+    
+    // FIX: URL Parameter korrekt übergeben
+    gridEl.innerHTML = state.dashboardData.map(data => createStockCardHTML(data, data.qty, data.url, totalEUR, state.eurUsdRate)).join('');
+    
     attachDashboardEvents();
 }
 
@@ -94,7 +97,7 @@ function attachDashboardEvents() {
     });
     document.querySelectorAll('.stock-card').forEach(card => {
         card.addEventListener('click', (e) => {
-            if(e.target.tagName === 'INPUT' || e.target.closest('.delete-btn')) return;
+            if(e.target.tagName === 'INPUT' || e.target.tagName === 'A' || e.target.closest('a') || e.target.closest('.delete-btn')) return;
             openModal(e.currentTarget.dataset.symbol);
         });
     });
@@ -110,8 +113,20 @@ function attachDashboardEvents() {
         });
         input.addEventListener('click', (e) => e.stopPropagation());
     });
+    document.querySelectorAll('.url-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const sym = e.target.dataset.symbol;
+            const newUrl = e.target.value;
+            updateUrl(sym, newUrl);
+            const item = state.dashboardData.find(d => d.symbol === sym);
+            if(item) item.url = newUrl;
+            renderDashboardGrid();
+        });
+        input.addEventListener('click', (e) => e.stopPropagation());
+    });
 }
 
+// ... (Rest bleibt gleich, da hier keine Fehler waren)
 async function openModal(symbol) {
     if(!modal) return;
     state.currentSymbol = symbol;
@@ -122,17 +137,13 @@ async function openModal(symbol) {
     modalType.textContent = '...';
     const rangeText = document.getElementById('dynamic-range-text');
     if(rangeText) rangeText.textContent = 'Lade...';
-    
     if(modalVol) modalVol.textContent = '---';
     if(modalTrend) modalTrend.textContent = '---';
-
     modal.classList.remove('hidden');
     updateRangeButtonsUI('1y');
     await loadChartForModal(symbol, '1y');
 }
-
 function closeModal() { if(modal) modal.classList.add('hidden'); state.currentSymbol = null; }
-
 function updateRangeButtonsUI(activeRange) {
     rangeBtns.forEach(btn => {
         const range = btn.dataset.range;
@@ -144,7 +155,6 @@ function updateRangeButtonsUI(activeRange) {
         }
     });
 }
-
 async function loadChartForModal(symbol, requestedRange) {
     const canvasId = 'main-chart';
     const canvas = document.getElementById(canvasId);
@@ -156,19 +166,16 @@ async function loadChartForModal(symbol, requestedRange) {
         else if (requestedRange === '1mo' || requestedRange === '3mo') interval = '1d';
         else if (requestedRange === '5y' || requestedRange === '10y') interval = '1wk';
         else if (requestedRange === 'max') interval = '1mo';
-
         const rawData = await fetchChartData(symbol, requestedRange, interval);
         if(rawData) {
             const analysis = analyze(rawData);
             renderChart(canvasId, rawData, requestedRange, analysis);
-            
             if(rawData.meta) {
                 if(modalExchange) modalExchange.textContent = rawData.meta.exchangeName || rawData.meta.exchangeTimezoneName || 'N/A';
                 const rawType = rawData.meta.instrumentType || 'EQUITY';
                 if(modalType) modalType.textContent = TYPE_TRANSLATIONS[rawType] || rawType;
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if(modalFullname) modalFullname.textContent = fullName; 
-                
                 if(analysis) {
                     if(modalVol) modalVol.textContent = analysis.volatility ? analysis.volatility.toFixed(1) + '%' : 'n/a';
                     if(modalTrend) {
@@ -185,7 +192,6 @@ async function loadChartForModal(symbol, requestedRange) {
     } catch (e) { console.error(e); if(modalFullname) modalFullname.textContent = "Fehler"; } 
     finally { if(canvas) canvas.style.opacity = '1'; }
 }
-
 rangeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         if(!state.currentSymbol) return;
@@ -195,7 +201,6 @@ rangeBtns.forEach(btn => {
         loadChartForModal(state.currentSymbol, range);
     });
 });
-
 function initSearch() {
     const input = document.getElementById('search-input');
     const resultsContainer = document.getElementById('search-results');
@@ -233,7 +238,6 @@ function initSearch() {
         }, 500);
     });
 }
-
 document.addEventListener('DOMContentLoaded', async () => {
     const currentTheme = initTheme();
     const updateIcon = (mode) => { const icon = themeBtn?.querySelector('i'); if(icon) { if (mode === 'dark') { icon.classList.remove('fa-moon'); icon.classList.add('fa-sun'); } else { icon.classList.remove('fa-sun'); icon.classList.add('fa-moon'); } } };
@@ -244,19 +248,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
     initSearch();
     loadDashboard();
-
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const importInput = document.getElementById('import-input');
     const copyBtn = document.getElementById('copy-list-btn');
-
+    const copyUrlsBtn = document.getElementById('copy-urls-btn');
     if(copyBtn) {
         copyBtn.addEventListener('click', () => {
-            if(!state.dashboardData || state.dashboardData.length === 0) {
-                alert("Keine Daten zum Kopieren.");
-                return;
-            }
-
+            if(!state.dashboardData || state.dashboardData.length === 0) { alert("Keine Daten."); return; }
             let totalValueEUR = 0;
             const items = state.dashboardData.map(item => {
                 let valEur = item.price * item.qty;
@@ -264,21 +263,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 totalValueEUR += valEur;
                 return { ...item, valEur };
             });
-
             if(totalValueEUR === 0) totalValueEUR = 1;
-
             items.forEach(i => i.percent = (i.valEur / totalValueEUR) * 100);
             items.sort((a, b) => b.percent - a.percent);
-
-            // HIER IST DIE ÄNDERUNG
             let text = "DEPOT-ZUSAMMENSETZUNG\n\n";
             items.forEach(i => {
                 const safeName = i.name || i.symbol || "Unbekannt";
                 const safeType = i.type || 'EQUITY';
                 const typeName = TYPE_TRANSLATIONS[safeType] || safeType;
-                text += `[${i.percent.toFixed(1)}%] ${safeName} (${i.symbol}) – ${typeName}\n`;
+                text += `[${i.percent.toFixed(1).replace('.',',')}%] ${safeName} (${i.symbol}) – ${typeName}\n`;
             });
-
             navigator.clipboard.writeText(text).then(() => {
                 const originalText = copyBtn.innerHTML;
                 copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kopiert!';
@@ -286,7 +280,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             }).catch(err => alert('Fehler beim Kopieren.'));
         });
     }
-
+    if(copyUrlsBtn) {
+        copyUrlsBtn.addEventListener('click', () => {
+            if(!state.dashboardData || state.dashboardData.length === 0) { alert("Keine Daten."); return; }
+            let text = "WICHTIGE LINKS\n\n";
+            const items = [...state.dashboardData].sort((a,b) => a.symbol.localeCompare(b.symbol));
+            let count = 0;
+            items.forEach(i => {
+                if(i.url && i.url.trim() !== '') {
+                    const safeName = i.name || i.symbol;
+                    text += `${safeName} (${i.symbol}):\n${i.url}\n\n`;
+                    count++;
+                }
+            });
+            if(count === 0) { alert("Keine URLs hinterlegt."); return; }
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = copyUrlsBtn.innerHTML;
+                copyUrlsBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kopiert!';
+                setTimeout(() => copyUrlsBtn.innerHTML = originalText, 2000);
+            });
+        });
+    }
     if(exportBtn) {
         exportBtn.addEventListener('click', () => {
             const data = localStorage.getItem('alphaview_portfolio');
@@ -303,7 +317,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             URL.revokeObjectURL(url);
         });
     }
-
     if(importBtn && importInput) {
         importBtn.addEventListener('click', () => {
             if(localStorage.getItem('alphaview_portfolio') && localStorage.getItem('alphaview_portfolio') !== '[]') {
@@ -311,7 +324,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             importInput.click();
         });
-
         importInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(!file) return;

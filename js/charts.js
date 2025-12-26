@@ -1,16 +1,14 @@
 /**
  * Charts Module
  * Engine: TradingView Lightweight Charts
- * Features: Interactive Crosshair, Area Chart, SMAs, ResizeObserver
+ * Fix: Dedup timestamps to prevent crashes
  */
 
 let chart = null;
 let areaSeries = null;
 let sma50Series = null;
 let sma200Series = null;
-let currentCurrency = 'USD'; // State for formatter
-
-// --- HELPERS ---
+let currentCurrency = 'USD';
 
 const formatCurrencyValue = (val, currency) => {
     const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
@@ -28,7 +26,6 @@ function calculateSMA_Data(timestamps, prices, window) {
     return result;
 }
 
-// Update Text UI (Badge)
 function updateRangeInfo(startTs, endTs, range) {
     const el = document.getElementById('dynamic-range-text');
     if (!el) return;
@@ -53,36 +50,36 @@ function updateRangeInfo(startTs, endTs, range) {
     } catch (err) { console.error(err); }
 }
 
-// Update Performance Badge
 function updatePerformance(startVal, endVal) {
     const el = document.getElementById('chart-performance');
     if (!el || !startVal) return;
-
     const diff = endVal - startVal;
     const pct = (diff / startVal) * 100;
     const sign = pct >= 0 ? '+' : '';
     const colorClass = pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-    el.innerHTML = `<span class="${colorClass}">${sign}${pct.toFixed(2)}%</span>`;
+    el.innerHTML = `<span class="${colorClass}">${sign}${pct.toFixed(2).replace('.',',')}%</span>`;
 }
-
-// --- MAIN RENDER FUNCTION ---
 
 export function renderChart(containerId, rawData, range = '1y', analysisData = null) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // 1. Data Preparation
     const timestamps = rawData.timestamp;
     const prices = rawData.indicators.quote[0].close;
     currentCurrency = rawData.meta.currency || 'USD';
 
-    // Filter nulls and create LWC format objects
+    // 1. Data Cleaning & Dedup
     const lineData = [];
+    const uniqueTimeMap = new Set();
     let validTimestamps = [];
     let validPrices = [];
 
     for(let i=0; i<timestamps.length; i++) {
         if(prices[i] !== null && prices[i] !== undefined) {
+            // Dedup Check: Yahoo sends duplicate seconds sometimes
+            if(uniqueTimeMap.has(timestamps[i])) continue;
+            uniqueTimeMap.add(timestamps[i]);
+
             lineData.push({ time: timestamps[i], value: prices[i] });
             validTimestamps.push(timestamps[i]);
             validPrices.push(prices[i]);
@@ -91,111 +88,63 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
 
     if(lineData.length === 0) return;
 
-    // UI Updates (Text)
+    // Sorting (just to be safe)
+    lineData.sort((a,b) => a.time - b.time);
+
     updateRangeInfo(validTimestamps[0], validTimestamps[validTimestamps.length-1], range);
     updatePerformance(validPrices[0], validPrices[validPrices.length-1]);
 
-    // 2. Chart Cleanup (if re-rendering)
-    if (chart) {
-        chart.remove();
-        chart = null;
-    }
-    container.innerHTML = ''; // Ensure clean slate
+    if (chart) { chart.remove(); chart = null; }
+    container.innerHTML = '';
 
-    // 3. Colors Setup (Dark/Light)
     const isDark = document.documentElement.classList.contains('dark');
-    const bg = 'transparent'; // Transparent damit es sich einfügt
+    const bg = 'transparent';
     const gridColor = isDark ? 'rgba(30, 41, 59, 0.5)' : 'rgba(226, 232, 240, 0.5)';
     const textColor = isDark ? '#94a3b8' : '#64748b';
     
-    // Determine Line Color based on Trend
     const startPrice = validPrices[0];
     const endPrice = validPrices[validPrices.length - 1];
     const isBullish = endPrice >= startPrice;
     
-    const mainColor = isBullish ? '#22c55e' : '#ef4444'; // Green or Red
+    const mainColor = isBullish ? '#22c55e' : '#ef4444'; 
     const topColor = isBullish ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)';
     const bottomColor = isBullish ? 'rgba(34, 197, 94, 0.0)' : 'rgba(239, 68, 68, 0.0)';
 
-    // 4. Create Chart
     chart = LightweightCharts.createChart(container, {
         width: container.clientWidth,
         height: container.clientHeight,
-        layout: {
-            background: { type: 'solid', color: bg },
-            textColor: textColor,
-            fontFamily: 'Inter',
-        },
-        grid: {
-            vertLines: { color: gridColor, style: 2 }, // Dashed
-            horzLines: { color: gridColor, style: 2 },
-        },
-        rightPriceScale: {
-            borderVisible: false,
-            scaleMargins: { top: 0.1, bottom: 0.1 },
-        },
-        timeScale: {
-            borderVisible: false,
-            timeVisible: true, // Shows time for intraday
-            secondsVisible: false,
-        },
-        crosshair: {
-            vertLine: { labelVisible: false },
-        },
-        handleScroll: false,
-        handleScale: false, 
+        layout: { background: { type: 'solid', color: bg }, textColor: textColor, fontFamily: 'Inter' },
+        grid: { vertLines: { color: gridColor, style: 2 }, horzLines: { color: gridColor, style: 2 } },
+        rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
+        timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+        crosshair: { vertLine: { labelVisible: false } },
+        handleScroll: false, handleScale: false, 
     });
 
-    // 5. Add Main Series (Area)
     areaSeries = chart.addAreaSeries({
-        lineColor: mainColor,
-        topColor: topColor,
-        bottomColor: bottomColor,
-        lineWidth: 2,
-        priceFormat: {
-            type: 'custom',
-            formatter: price => formatCurrencyValue(price, currentCurrency),
-        },
+        lineColor: mainColor, topColor: topColor, bottomColor: bottomColor, lineWidth: 2,
+        priceFormat: { type: 'custom', formatter: price => formatCurrencyValue(price, currentCurrency) },
     });
     areaSeries.setData(lineData);
 
-    // 6. Add SMAs (if applicable)
     const isIntraday = (range === '1d' || range === '5d');
-    
     if (!isIntraday && validPrices.length > 50) {
-        sma50Series = chart.addLineSeries({
-            color: '#3b82f6', // Blue
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-            crosshairMarkerVisible: false,
-        });
+        sma50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
         const sma50Data = calculateSMA_Data(validTimestamps, validPrices, 50);
         sma50Series.setData(sma50Data);
     }
-
     if (!isIntraday && validPrices.length > 200) {
-        sma200Series = chart.addLineSeries({
-            color: '#f59e0b', // Orange
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-            crosshairMarkerVisible: false,
-        });
+        sma200Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
         const sma200Data = calculateSMA_Data(validTimestamps, validPrices, 200);
         sma200Series.setData(sma200Data);
     }
 
-    // 7. Responsive Resizing
     const resizeObserver = new ResizeObserver(entries => {
         if (entries.length === 0 || entries[0].target !== container) return;
         const newRect = entries[0].contentRect;
         chart.applyOptions({ width: newRect.width, height: newRect.height });
     });
     resizeObserver.observe(container);
-
-    // 8. Crosshair Handler (Updates Header Price on Hover)
-    // Optional: Could implement dynamic header update here
     
     chart.timeScale().fitContent();
 }
