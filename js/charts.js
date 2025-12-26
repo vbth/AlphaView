@@ -1,7 +1,7 @@
 /**
  * Charts Module
  * Renders interactive charts using Chart.js.
- * Updated: ID Fix for Date Range Text
+ * Fixed: Robust Date Range Text Update
  */
 let chartInstance = null;
 
@@ -11,6 +11,7 @@ const formatCurrencyValue = (val, currency) => {
 };
 
 function getWeekNumber(date) {
+    // Sicherheitskopie des Datums, um Original nicht zu ändern
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -19,7 +20,7 @@ function getWeekNumber(date) {
 }
 
 function getWeekBounds(date) {
-    const d = new Date(date);
+    const d = new Date(date); // Kopie
     const day = d.getDay() || 7; 
     if (day !== 1) d.setHours(-24 * (day - 1));
     const monday = new Date(d);
@@ -28,44 +29,63 @@ function getWeekBounds(date) {
     return { monday, friday };
 }
 
+// Hier passiert das Text-Update für den Zeitraum
 function updateRangeInfo(labels, range) {
-    // WICHTIG: Hier muss die ID "dynamic-range-text" stehen, passend zum HTML
     const el = document.getElementById('dynamic-range-text');
-    if (!el || labels.length === 0) return;
-
-    const start = labels[0];
-    const end = labels[labels.length - 1];
     
-    const fDate = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const fMonthYear = (d) => d.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' });
-    const fYear = (d) => d.getFullYear(); 
-    const fmtTime = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
-
-    let text = "";
-
-    switch(range) {
-        case '1d':
-            text = `Handelstag: ${fDate(end)} <span class="opacity-50 ml-1 font-normal">(${fmtTime.format(end)})</span>`;
-            break;
-        case '5d':
-            const kw = getWeekNumber(end);
-            const bounds = getWeekBounds(end);
-            text = `KW ${kw} (${fDate(bounds.monday)} – ${fDate(bounds.friday)})`;
-            break;
-        case '1mo':
-        case '6mo':
-            text = `${fMonthYear(start).replace('.','/')} – ${fMonthYear(end).replace('.','/')}`;
-            break;
-        case '1y':
-            const y1 = fYear(start);
-            const y2 = fYear(end);
-            text = (y1 === y2) ? `${y1}` : `${y1} – ${y2}`;
-            break;
-        default:
-            text = `${fYear(start)} – ${fYear(end)}`;
-            break;
+    // Safety Checks
+    if (!el) {
+        console.warn("Element 'dynamic-range-text' nicht gefunden!");
+        return;
     }
-    el.innerHTML = text;
+    if (!labels || labels.length === 0) {
+        el.textContent = "Keine Daten";
+        return;
+    }
+
+    try {
+        const start = labels[0];
+        const end = labels[labels.length - 1];
+        
+        // Formatter erstellen
+        const fDate = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const fMonthYear = (d) => d.toLocaleDateString('de-DE', { month: '2-digit', year: 'numeric' });
+        const fYear = (d) => d.getFullYear(); 
+        const fmtTime = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+        let text = "";
+
+        switch(range) {
+            case '1d':
+                text = `Handelstag: ${fDate(end)} <span class="opacity-50 ml-1 font-normal">(${fmtTime.format(end)})</span>`;
+                break;
+            case '5d':
+                const kw = getWeekNumber(end);
+                const bounds = getWeekBounds(end);
+                text = `KW ${kw} (${fDate(bounds.monday)} – ${fDate(bounds.friday)})`;
+                break;
+            case '1mo':
+            case '6mo':
+                text = `${fMonthYear(start).replace('.','/')} – ${fMonthYear(end).replace('.','/')}`;
+                break;
+            case '1y':
+                const y1 = fYear(start);
+                const y2 = fYear(end);
+                text = (y1 === y2) ? `${y1}` : `${y1} – ${y2}`;
+                break;
+            default:
+                // 5y, 10y, max
+                text = `${fYear(start)} – ${fYear(end)}`;
+                break;
+        }
+        
+        // Text setzen
+        el.innerHTML = text;
+
+    } catch (err) {
+        console.error("Fehler beim Datumsformatieren:", err);
+        el.textContent = "Zeitraum Fehler";
+    }
 }
 
 export function renderChart(canvasId, rawData, range = '1y') {
@@ -77,7 +97,10 @@ export function renderChart(canvasId, rawData, range = '1y') {
     const prices = rawData.indicators.quote[0].close;
     const currency = rawData.meta.currency || 'USD';
 
+    // Konvertiere Timestamps zu echten Date Objekten
     const labels = timestamps.map(t => new Date(t * 1000));
+
+    // Rufe die Text-Update Funktion auf
     updateRangeInfo(labels, range);
 
     if (chartInstance) chartInstance.destroy();
