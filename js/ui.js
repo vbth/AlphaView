@@ -1,7 +1,6 @@
 /**
  * UI Module
- * Generates HTML strings for Dashboard, Header, and Search.
- * Updated: Delete Button always visible & larger touch target.
+ * Updates: Increased whitespace inside card for Delete button safety.
  */
 export const formatMoney = (val, currency) => {
     const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
@@ -12,7 +11,6 @@ const formatPercent = (val) => `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
 
 export function renderAppSkeleton(container) {
     container.innerHTML = `
-        <!-- PORTFOLIO HEADER -->
         <div id="portfolio-summary" class="hidden mb-8 bg-white dark:bg-dark-surface rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h2 class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Gesamtdepotwert</h2>
@@ -27,7 +25,6 @@ export function renderAppSkeleton(container) {
             </div>
         </div>
 
-        <!-- SEARCH -->
         <div class="mb-8 relative max-w-xl mx-auto">
             <div class="relative">
                 <input type="text" id="search-input" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg pl-12 pr-4 py-3 shadow-sm focus:ring-2 focus:ring-primary outline-none" placeholder="Suche Name oder Symbol..." autocomplete="off">
@@ -40,7 +37,6 @@ export function renderAppSkeleton(container) {
 
         <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         
-        <!-- EMPTY STATE -->
         <div id="empty-state" class="hidden text-center py-12">
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 mb-4"><i class="fa-solid fa-layer-group text-slate-400 text-2xl"></i></div>
             <h3 class="text-lg font-medium text-slate-900 dark:text-white">Watchlist leer</h3>
@@ -61,18 +57,18 @@ export function createStockCardHTML(data, qty, totalPortfolioValueEUR, eurUsdRat
     return `
         <div class="stock-card group relative bg-white dark:bg-dark-surface rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-primary/50 dark:hover:border-neon-accent/50 transition-all duration-300 cursor-pointer overflow-hidden" data-symbol="${data.symbol}">
             
-            <!-- DELETE BUTTON: Always visible, large touch target -->
             <button class="delete-btn absolute top-0 right-0 p-4 text-slate-300 hover:text-red-500 transition-colors z-20" data-symbol="${data.symbol}" title="Entfernen">
                 <i class="fa-solid fa-times text-lg"></i>
             </button>
 
             <div class="p-5">
                 <div class="flex justify-between items-start mb-4 gap-4">
-                    <div class="flex-grow min-w-0 pr-6"> <!-- pr-6 verhindert Text unter Delete Button -->
+                    <div class="flex-grow min-w-0 pr-2"> 
                         <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate" title="${data.name}">${data.name}</h3>
                         <div class="flex items-center gap-2 text-xs font-mono text-slate-500 mt-1"><span class="font-bold text-slate-700 dark:text-slate-300">${data.symbol}</span><span class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">${data.currency}</span></div>
                     </div>
-                    <div class="text-right whitespace-nowrap pt-1">
+                    <!-- HIER: mr-8 sorgt für Abstand zum Delete Button -->
+                    <div class="text-right whitespace-nowrap pt-1 mr-8">
                         <div class="text-xl font-bold font-mono text-slate-900 dark:text-slate-100">${formatMoney(data.price, data.currency)}</div>
                         <div class="text-sm font-medium font-mono ${colorClass}">${formatPercent(data.changePercent)}</div>
                     </div>

@@ -1,7 +1,6 @@
 /**
  * Charts Module
- * Renders interactive charts using Chart.js.
- * Fixed: Removed "Handelstag:" text.
+ * Updates: Calculates and displays Performance % for the selected range.
  */
 let chartInstance = null;
 
@@ -10,14 +9,31 @@ const formatCurrencyValue = (val, currency) => {
     return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
 };
 
+// Berechnet Performance (Start vs Ende)
+function updatePerformance(prices) {
+    const el = document.getElementById('chart-performance');
+    if (!el || prices.length < 2) return;
+
+    const start = prices.find(p => p !== null) || 0;
+    const end = prices[prices.length - 1] || start;
+    
+    if (start === 0) return;
+
+    const diff = end - start;
+    const pct = (diff / start) * 100;
+    
+    // Formatierung: +2.50% oder -1.20%
+    const sign = pct >= 0 ? '+' : '';
+    const colorClass = pct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+    
+    el.innerHTML = `<span class="${colorClass}">${sign}${pct.toFixed(2)}%</span>`;
+}
+
 function updateRangeInfo(labels, range) {
     const el = document.getElementById('dynamic-range-text');
     
     if (!el) return;
-    if (!labels || labels.length === 0) {
-        el.textContent = "Keine Daten";
-        return;
-    }
+    if (!labels || labels.length === 0) { el.textContent = "Keine Daten"; return; }
 
     try {
         const start = labels[0];
@@ -31,7 +47,6 @@ function updateRangeInfo(labels, range) {
         let text = "";
 
         if (range === '1d') {
-            // HIER GEÄNDERT: Nur Datum und Uhrzeit
             text = `${fDate(end)} <span class="opacity-50 ml-1 font-normal">(${fmtTime.format(end)})</span>`;
         } 
         else if (range === '5d') {
@@ -51,9 +66,7 @@ function updateRangeInfo(labels, range) {
         
         el.innerHTML = text;
 
-    } catch (err) {
-        console.error("Error formatting date:", err);
-    }
+    } catch (err) { console.error("Error formatting date:", err); }
 }
 
 export function renderChart(canvasId, rawData, range = '1y') {
@@ -66,7 +79,10 @@ export function renderChart(canvasId, rawData, range = '1y') {
     const currency = rawData.meta.currency || 'USD';
 
     const labels = timestamps.map(t => new Date(t * 1000));
+    
+    // UI Updates
     updateRangeInfo(labels, range);
+    updatePerformance(prices); // NEU: Performance berechnen
 
     if (chartInstance) chartInstance.destroy();
 
