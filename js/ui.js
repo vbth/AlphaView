@@ -1,6 +1,7 @@
 /**
  * UI Module
  * Generates HTML strings for Dashboard, Header, and Search.
+ * Updated: Delete Button always visible & larger touch target.
  */
 export const formatMoney = (val, currency) => {
     const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
@@ -59,15 +60,19 @@ export function createStockCardHTML(data, qty, totalPortfolioValueEUR, eurUsdRat
 
     return `
         <div class="stock-card group relative bg-white dark:bg-dark-surface rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-primary/50 dark:hover:border-neon-accent/50 transition-all duration-300 cursor-pointer overflow-hidden" data-symbol="${data.symbol}">
-            <button class="delete-btn absolute top-2 right-2 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10" data-symbol="${data.symbol}"><i class="fa-solid fa-times"></i></button>
+            
+            <!-- DELETE BUTTON: Always visible, large touch target -->
+            <button class="delete-btn absolute top-0 right-0 p-4 text-slate-300 hover:text-red-500 transition-colors z-20" data-symbol="${data.symbol}" title="Entfernen">
+                <i class="fa-solid fa-times text-lg"></i>
+            </button>
 
             <div class="p-5">
                 <div class="flex justify-between items-start mb-4 gap-4">
-                    <div class="flex-grow min-w-0"> 
+                    <div class="flex-grow min-w-0 pr-6"> <!-- pr-6 verhindert Text unter Delete Button -->
                         <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate" title="${data.name}">${data.name}</h3>
                         <div class="flex items-center gap-2 text-xs font-mono text-slate-500 mt-1"><span class="font-bold text-slate-700 dark:text-slate-300">${data.symbol}</span><span class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">${data.currency}</span></div>
                     </div>
-                    <div class="text-right whitespace-nowrap">
+                    <div class="text-right whitespace-nowrap pt-1">
                         <div class="text-xl font-bold font-mono text-slate-900 dark:text-slate-100">${formatMoney(data.price, data.currency)}</div>
                         <div class="text-sm font-medium font-mono ${colorClass}">${formatPercent(data.changePercent)}</div>
                     </div>
