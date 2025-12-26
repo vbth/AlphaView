@@ -1,6 +1,7 @@
 /**
  * App Module
- * Updated: Logic for "Copy Portfolio List" button
+ * Main Controller
+ * Fixed: "undefined" in Copy List function
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -247,7 +248,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const importInput = document.getElementById('import-input');
-    // HIER NEU: Copy Button Logic
     const copyBtn = document.getElementById('copy-list-btn');
 
     if(copyBtn) {
@@ -257,39 +257,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // 1. Gesamtwert in EUR berechnen
             let totalValueEUR = 0;
             const items = state.dashboardData.map(item => {
                 let valEur = item.price * item.qty;
                 if(item.currency === 'USD') valEur /= state.eurUsdRate;
                 totalValueEUR += valEur;
-                return { ...item, valEur }; // Temporär speichern
+                return { ...item, valEur };
             });
 
-            if(totalValueEUR === 0) totalValueEUR = 1; // Div by Zero Schutz
+            if(totalValueEUR === 0) totalValueEUR = 1;
 
-            // 2. Prozent berechnen und sortieren
             items.forEach(i => i.percent = (i.valEur / totalValueEUR) * 100);
             items.sort((a, b) => b.percent - a.percent);
 
-            // 3. Text generieren
             let text = "DEPOT ZUSAMMENSETZUNG:\n\n";
             items.forEach(i => {
-                // Deutsch übersetzen falls möglich
-                const typeName = TYPE_TRANSLATIONS[i.type] || i.type;
-                text += `[${i.percent.toFixed(1)}%] ${i.name} (${i.symbol}) - ${typeName}\n`;
+                // FIXED: Fallback values if data is missing
+                const safeName = i.name || i.symbol || "Unbekannt";
+                const safeType = i.type || 'EQUITY';
+                const typeName = TYPE_TRANSLATIONS[safeType] || safeType;
+                
+                text += `[${i.percent.toFixed(1)}%] ${safeName} (${i.symbol}) - ${typeName}\n`;
             });
 
-            // 4. Kopieren
             navigator.clipboard.writeText(text).then(() => {
-                // Kleines visuelles Feedback (Button Text ändern)
                 const originalText = copyBtn.innerHTML;
                 copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kopiert!';
                 setTimeout(() => copyBtn.innerHTML = originalText, 2000);
-            }).catch(err => {
-                console.error('Copy failed', err);
-                alert('Fehler beim Kopieren.');
-            });
+            }).catch(err => alert('Fehler beim Kopieren.'));
         });
     }
 
