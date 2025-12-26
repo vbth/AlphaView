@@ -1,6 +1,6 @@
 /**
- * AlphaView Main Controller
- * Fixed: Syntax Error & Range Passing
+ * App Module
+ * Main Controller: Coordinates Logic, UI, and Events.
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -14,7 +14,7 @@ const state = {
     currentSymbol: null,
     currentRange: '1y',
     dashboardData: [],
-    eurUsdRate: 1.08 // Fallback
+    eurUsdRate: 1.08
 };
 
 const rootEl = document.getElementById('app-root');
@@ -40,29 +40,20 @@ async function loadDashboard() {
     const summaryEl = document.getElementById('portfolio-summary');
 
     if (!gridEl) return;
-
     if (watchlist.length === 0) {
         gridEl.innerHTML = '';
         if(emptyStateEl) emptyStateEl.classList.remove('hidden');
         if(summaryEl) summaryEl.classList.add('hidden');
         return;
     }
-
     if(emptyStateEl) emptyStateEl.classList.add('hidden');
     if(summaryEl) summaryEl.classList.remove('hidden');
-    
-    if(!gridEl.hasChildNodes()) {
-        gridEl.innerHTML = '<div class="col-span-full text-center text-slate-400 py-8 animate-pulse">Lade Kurse & Wechselkurse...</div>';
-    }
+    if(!gridEl.hasChildNodes()) gridEl.innerHTML = '<div class="col-span-full text-center text-slate-400 py-8 animate-pulse">Lade Kurse & Wechselkurse...</div>';
 
     try {
         let rateData = null;
-        try {
-            rateData = await fetchChartData('EURUSD=X', '5d', '1d');
-        } catch (e) {
-            console.warn("Währungskurs Fehler", e);
-        }
-
+        try { rateData = await fetchChartData('EURUSD=X', '5d', '1d'); } catch (e) {}
+        
         const stockPromises = watchlist.map(async (item) => {
             try {
                 const rawData = await fetchChartData(item.symbol, '1y', '1d');
@@ -74,7 +65,6 @@ async function loadDashboard() {
         });
 
         const stockResults = await Promise.all(stockPromises);
-        
         if(rateData && rateData.indicators && rateData.indicators.quote[0].close) {
             const closes = rateData.indicators.quote[0].close;
             const currentRate = closes.filter(c => c).pop();
@@ -83,10 +73,7 @@ async function loadDashboard() {
 
         state.dashboardData = stockResults.filter(r => r !== null);
         renderDashboardGrid();
-
-    } catch (criticalError) {
-        console.error("Dashboard Error:", criticalError);
-    }
+    } catch (criticalError) { console.error("Dashboard Error:", criticalError); }
 }
 
 function renderDashboardGrid() {
@@ -96,22 +83,16 @@ function renderDashboardGrid() {
     const totalPosEl = document.getElementById('total-positions');
 
     if (!totalEurEl) return;
-
     let totalEUR = 0;
 
     state.dashboardData.forEach(item => {
         const rawValue = item.price * item.qty;
-        if (item.currency === 'EUR') {
-            totalEUR += rawValue;
-        } else if (item.currency === 'USD') {
-            totalEUR += (rawValue / state.eurUsdRate);
-        } else {
-            totalEUR += rawValue;
-        }
+        if (item.currency === 'EUR') totalEUR += rawValue;
+        else if (item.currency === 'USD') totalEUR += (rawValue / state.eurUsdRate);
+        else totalEUR += rawValue;
     });
 
     const totalUSD = totalEUR * state.eurUsdRate;
-
     if(totalEurEl) totalEurEl.textContent = formatMoney(totalEUR, 'EUR');
     if(totalUsdEl) totalUsdEl.textContent = formatMoney(totalUSD, 'USD');
     if(totalPosEl) totalPosEl.textContent = state.dashboardData.length;
@@ -119,7 +100,6 @@ function renderDashboardGrid() {
     gridEl.innerHTML = state.dashboardData
         .map(data => createStockCardHTML(data, data.qty, totalEUR, state.eurUsdRate))
         .join('');
-
     attachDashboardEvents();
 }
 
@@ -128,21 +108,15 @@ function attachDashboardEvents() {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const sym = e.currentTarget.dataset.symbol;
-            if(confirm(`${sym} entfernen?`)) {
-                removeSymbol(sym);
-                loadDashboard();
-            }
+            if(confirm(`${sym} entfernen?`)) { removeSymbol(sym); loadDashboard(); }
         });
     });
-
     document.querySelectorAll('.stock-card').forEach(card => {
         card.addEventListener('click', (e) => {
             if(e.target.tagName === 'INPUT' || e.target.closest('.delete-btn')) return;
-            const sym = e.currentTarget.dataset.symbol;
-            openModal(sym);
+            openModal(e.currentTarget.dataset.symbol);
         });
     });
-
     document.querySelectorAll('.qty-input').forEach(input => {
         input.addEventListener('change', (e) => {
             const sym = e.target.dataset.symbol;
@@ -170,10 +144,7 @@ async function openModal(symbol) {
     await loadChartForModal(symbol, '1y');
 }
 
-function closeModal() {
-    if(modal) modal.classList.add('hidden');
-    state.currentSymbol = null;
-}
+function closeModal() { if(modal) modal.classList.add('hidden'); state.currentSymbol = null; }
 
 function updateRangeButtonsUI(activeRange) {
     rangeBtns.forEach(btn => {
@@ -194,7 +165,6 @@ async function loadChartForModal(symbol, requestedRange) {
 
     try {
         let interval = '1d';
-        // Smart Intervals
         if (requestedRange === '1d') interval = '5m';
         else if (requestedRange === '5d') interval = '15m';
         else if (requestedRange === '1mo' || requestedRange === '3mo') interval = '1d';
@@ -203,14 +173,11 @@ async function loadChartForModal(symbol, requestedRange) {
 
         const rawData = await fetchChartData(symbol, requestedRange, interval);
         if(rawData) {
-            renderChart(canvasId, rawData, requestedRange); // WICHTIG: range weitergeben
-
+            renderChart(canvasId, rawData, requestedRange);
             if(rawData.meta) {
                 if(modalExchange) modalExchange.textContent = rawData.meta.exchangeName || rawData.meta.exchangeTimezoneName || 'N/A';
-                
                 const rawType = rawData.meta.instrumentType || 'EQUITY';
                 if(modalType) modalType.textContent = TYPE_TRANSLATIONS[rawType] || rawType;
-                
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if(modalFullname) modalFullname.textContent = fullName; 
             }
@@ -235,7 +202,6 @@ function initSearch() {
     const spinner = document.getElementById('search-spinner');
 
     if(!input) return;
-
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#search-input') && !e.target.closest('#search-results')) resultsContainer.classList.add('hidden');
     });
@@ -244,9 +210,7 @@ function initSearch() {
         if (e.key === 'Enter') {
             const val = input.value.trim().toUpperCase();
             if (val.length > 0) {
-                if(addSymbol(val)) {
-                    console.log(`Manuell hinzugefügt: ${val}`);
-                }
+                if(addSymbol(val)) console.log(`Manuell hinzugefügt: ${val}`);
                 input.value = '';
                 resultsContainer.classList.add('hidden');
                 loadDashboard();

@@ -1,8 +1,7 @@
 /**
  * UI Module
- * Added: Search Helper Text & Full Names
+ * Generates HTML strings for Dashboard, Header, and Search.
  */
-
 export const formatMoney = (val, currency) => {
     const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
     return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
@@ -19,7 +18,6 @@ export function renderAppSkeleton(container) {
                 <div class="text-4xl font-bold text-slate-900 dark:text-white" id="total-balance-eur">---</div>
                 <div class="text-lg font-mono font-medium text-slate-500 dark:text-slate-400 mt-1" id="total-balance-usd">---</div>
             </div>
-            
             <div class="flex gap-8 text-right">
                 <div>
                     <div class="text-xs text-slate-500">Positionen</div>
@@ -28,26 +26,17 @@ export function renderAppSkeleton(container) {
             </div>
         </div>
 
-        <!-- SEARCH SECTION -->
+        <!-- SEARCH -->
         <div class="mb-8 relative max-w-xl mx-auto">
             <div class="relative">
-                <input type="text" id="search-input" 
-                    class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg pl-12 pr-4 py-3 shadow-sm focus:ring-2 focus:ring-primary outline-none" 
-                    placeholder="Suche Name (z.B. Vanguard) oder Symbol..." autocomplete="off">
+                <input type="text" id="search-input" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg pl-12 pr-4 py-3 shadow-sm focus:ring-2 focus:ring-primary outline-none" placeholder="Suche Name oder Symbol..." autocomplete="off">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-400"></i>
                 <div id="search-spinner" class="hidden absolute right-4 top-3.5"><i class="fa-solid fa-circle-notch fa-spin text-primary"></i></div>
             </div>
-            
-            <!-- HIER IST DIE KURZANLEITUNG -->
-            <p class="text-xs text-slate-400 dark:text-slate-500 mt-2 ml-1">
-                <i class="fa-solid fa-circle-info mr-1"></i>
-                Tipp: Findest du einen ETF nicht? Tippe das Yahoo-Kürzel (z.B. <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">EUNL.DE</code>) und drücke <strong>ENTER</strong>.
-            </p>
-
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-2 ml-1"><i class="fa-solid fa-circle-info mr-1"></i>Tipp: ETF nicht gefunden? Tippe das Kürzel (z.B. <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">EUNL.DE</code>) und drücke <strong>ENTER</strong>.</p>
             <div id="search-results" class="hidden absolute w-full bg-white dark:bg-slate-800 mt-2 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden max-h-80 overflow-y-auto"></div>
         </div>
 
-        <!-- GRID -->
         <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         
         <!-- EMPTY STATE -->
@@ -63,12 +52,9 @@ export function createStockCardHTML(data, qty, totalPortfolioValueEUR, eurUsdRat
     const isUp = data.change >= 0;
     const colorClass = isUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
     const trendIcon = data.trend === 'bullish' ? 'fa-arrow-trend-up' : (data.trend === 'bearish' ? 'fa-arrow-trend-down' : 'fa-minus');
-    
     const positionValueNative = data.price * qty;
     let positionValueEUR = positionValueNative;
-    if (data.currency === 'USD') {
-        positionValueEUR = positionValueNative / eurUsdRate;
-    }
+    if (data.currency === 'USD') positionValueEUR = positionValueNative / eurUsdRate;
     const weightPercent = totalPortfolioValueEUR > 0 ? (positionValueEUR / totalPortfolioValueEUR) * 100 : 0;
 
     return `
@@ -78,22 +64,14 @@ export function createStockCardHTML(data, qty, totalPortfolioValueEUR, eurUsdRat
             <div class="p-5">
                 <div class="flex justify-between items-start mb-4 gap-4">
                     <div class="flex-grow min-w-0"> 
-                        <!-- VOLLER NAME (Hervorgehoben) -->
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate" title="${data.name}">
-                            ${data.name}
-                        </h3>
-                        <!-- Symbol darunter -->
-                        <div class="flex items-center gap-2 text-xs font-mono text-slate-500 mt-1">
-                            <span class="font-bold text-slate-700 dark:text-slate-300">${data.symbol}</span>
-                            <span class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">${data.currency}</span>
-                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate" title="${data.name}">${data.name}</h3>
+                        <div class="flex items-center gap-2 text-xs font-mono text-slate-500 mt-1"><span class="font-bold text-slate-700 dark:text-slate-300">${data.symbol}</span><span class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">${data.currency}</span></div>
                     </div>
                     <div class="text-right whitespace-nowrap">
                         <div class="text-xl font-bold font-mono text-slate-900 dark:text-slate-100">${formatMoney(data.price, data.currency)}</div>
                         <div class="text-sm font-medium font-mono ${colorClass}">${formatPercent(data.changePercent)}</div>
                     </div>
                 </div>
-
                 <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 mb-4 border border-slate-100 dark:border-slate-700" onclick="event.stopPropagation()">
                     <div class="flex justify-between items-center mb-2">
                         <label class="text-xs text-slate-500 uppercase font-semibold">Menge</label>
@@ -103,29 +81,16 @@ export function createStockCardHTML(data, qty, totalPortfolioValueEUR, eurUsdRat
                         <div class="text-xs text-slate-500">Wert</div>
                         <div class="font-mono font-bold text-slate-900 dark:text-white">${formatMoney(positionValueNative, data.currency)}</div>
                     </div>
-                    <div class="flex justify-between items-center mt-1">
-                        <div class="text-xs text-slate-500">Anteil</div>
-                        <div class="text-xs font-mono text-slate-400">${weightPercent.toFixed(1)}%</div>
-                    </div>
+                    <div class="flex justify-between items-center mt-1"><div class="text-xs text-slate-500">Anteil</div><div class="text-xs font-mono text-slate-400">${weightPercent.toFixed(1)}%</div></div>
                 </div>
-
-                <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <div class="flex items-center gap-1"><i class="fa-solid ${trendIcon}"></i> ${data.trend}</div>
-                    <div>Vol: ${data.volatility.toFixed(1)}%</div>
-                </div>
+                <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400"><div class="flex items-center gap-1"><i class="fa-solid ${trendIcon}"></i> ${data.trend}</div><div>Vol: ${data.volatility.toFixed(1)}%</div></div>
             </div>
             <div class="h-1 w-full ${isUp ? 'bg-green-500' : 'bg-red-500'}"></div>
         </div>
     `;
 }
 
-const TYPE_BADGES = {
-    'EQUITY': { label: 'AKTIE', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-    'ETF': { label: 'ETF', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-    'MUTUALFUND': { label: 'FONDS', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-    'CRYPTOCURRENCY': { label: 'KRYPTO', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
-    'INDEX': { label: 'INDEX', color: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200' }
-};
+const TYPE_BADGES = { 'EQUITY': {label:'AKTIE',color:'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}, 'ETF': {label:'ETF',color:'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}, 'MUTUALFUND': {label:'FONDS',color:'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'}, 'CRYPTOCURRENCY': {label:'KRYPTO',color:'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}, 'INDEX': {label:'INDEX',color:'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200'} };
 
 export function renderSearchResults(results, container) {
     if (results.length === 0) {
@@ -139,10 +104,7 @@ export function renderSearchResults(results, container) {
         <div class="search-item px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors group" data-symbol="${item.symbol}">
             <div class="flex justify-between items-center">
                 <div class="flex-grow min-w-0 mr-4">
-                    <div class="flex items-center gap-2 mb-0.5">
-                        <span class="font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap">${item.symbol}</span>
-                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${badge.color}">${badge.label}</span>
-                    </div>
+                    <div class="flex items-center gap-2 mb-0.5"><span class="font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap">${item.symbol}</span><span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${badge.color}">${badge.label}</span></div>
                     <div class="text-xs text-slate-500 truncate" title="${item.name}">${item.name}</div>
                 </div>
                 <div class="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-1 rounded whitespace-nowrap group-hover:bg-white dark:group-hover:bg-slate-600 transition-colors">${item.exchange}</div>

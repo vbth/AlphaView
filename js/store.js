@@ -1,11 +1,14 @@
+/**
+ * Store Module
+ * Manages Portfolio/Watchlist persistence in LocalStorage.
+ */
 const STORAGE_KEY = 'alphaview_portfolio';
 
 function getPortfolio() {
     const json = localStorage.getItem(STORAGE_KEY);
     if (!json) return [];
     let data = JSON.parse(json);
-
-    // Migration alter Daten (String-Array -> Objekt-Array)
+    // Migration: Falls alte Daten (String-Array) vorhanden sind
     if (data.length > 0 && typeof data[0] === 'string') {
         data = data.map(symbol => ({ symbol: symbol, qty: 0 }));
         savePortfolio(data);
@@ -13,13 +16,9 @@ function getPortfolio() {
     return data;
 }
 
-function savePortfolio(portfolio) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
-}
+function savePortfolio(portfolio) { localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio)); }
 
-export function getWatchlist() {
-    return getPortfolio();
-}
+export function getWatchlist() { return getPortfolio(); }
 
 export function addSymbol(symbol) {
     const portfolio = getPortfolio();

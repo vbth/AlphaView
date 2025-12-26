@@ -1,6 +1,6 @@
 /**
  * Charts Module
- * Fixed: Gaps & Axis Formatting
+ * Renders interactive charts using Chart.js.
  */
 let chartInstance = null;
 
@@ -9,18 +9,34 @@ const formatCurrencyValue = (val, currency) => {
     return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
 };
 
-// Intelligenter Datumsformatierer
-function formatDateLabel(date, range) {
-    // Wenn Intraday (1d) oder Kurze Woche (5d) -> Uhrzeit zeigen
-    if (range === '1d' || range === '5d') {
-        return new Intl.DateTimeFormat('de-DE', { 
-            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' 
-        }).format(date);
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function updateRangeInfo(labels, range) {
+    const el = document.getElementById('chart-date-range');
+    if (!el || labels.length === 0) return;
+
+    const start = labels[0];
+    const end = labels[labels.length - 1];
+    
+    const fmtDate = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const fmtShort = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit' });
+    const fmtTime = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+    let text = "";
+    if (range === '1d') {
+        text = `<i class="fa-regular fa-calendar mr-2"></i>Handelstag: ${fmtDate.format(end)} <span class="text-slate-400 ml-2 text-xs font-normal">(Stand: ${fmtTime.format(end)})</span>`;
+    } else if (range === '5d') {
+        const kw = getWeekNumber(end);
+        text = `<i class="fa-solid fa-calendar-week mr-2"></i>KW ${kw} (${fmtShort.format(start)} - ${fmtDate.format(end)})`;
+    } else {
+        text = `<i class="fa-regular fa-calendar-days mr-2"></i>${fmtDate.format(start)} - ${fmtDate.format(end)}`;
     }
-    // Sonst nur Datum
-    return new Intl.DateTimeFormat('de-DE', { 
-        day: '2-digit', month: '2-digit', year: '2-digit' 
-    }).format(date);
+    el.innerHTML = text;
 }
 
 export function renderChart(canvasId, rawData, range = '1y') {
@@ -33,6 +49,7 @@ export function renderChart(canvasId, rawData, range = '1y') {
     const currency = rawData.meta.currency || 'USD';
 
     const labels = timestamps.map(t => new Date(t * 1000));
+    updateRangeInfo(labels, range);
 
     if (chartInstance) chartInstance.destroy();
 
@@ -59,7 +76,7 @@ export function renderChart(canvasId, rawData, range = '1y') {
                 pointHoverRadius: 6,
                 fill: true,
                 tension: 0.1,
-                spanGaps: true // WICHTIG: Verbindet Linien bei fehlenden Daten (Lückenfüller)
+                spanGaps: true
             }]
         },
         options: {
@@ -78,45 +95,29 @@ export function renderChart(canvasId, rawData, range = '1y') {
                     displayColors: false,
                     callbacks: {
                         title: function(context) {
-                            const index = context[0].dataIndex;
-                            return formatDateLabel(labels[index], range);
+                            const d = labels[context[0].dataIndex];
+                            if (range === '1d' || range === '5d') return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' });
+                            return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         },
-                        label: function(context) {
-                            return formatCurrencyValue(context.parsed.y, currency);
-                        }
+                        label: function(context) { return formatCurrencyValue(context.parsed.y, currency); }
                     }
                 }
             },
             scales: {
                 x: {
-                    display: true,
-                    grid: { display: false },
+                    display: true, grid: { display: false },
                     ticks: {
-                        color: '#94a3b8',
-                        maxRotation: 0,
-                        autoSkip: true,
-                        maxTicksLimit: 6,
+                        color: '#94a3b8', maxRotation: 0, autoSkip: true, maxTicksLimit: 6,
                         callback: function(val, index) {
-                            // Zeige Uhrzeit nur bei 1d/5d
                             const d = labels[index];
                             if (!d) return '';
-                            
-                            if (range === '1d' || range === '5d') {
-                                return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute:'2-digit' });
-                            }
+                            if (range === '1d') return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute:'2-digit' });
+                            if (range === '5d') return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit' });
                             return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
                         }
                     }
                 },
-                y: {
-                    display: true,
-                    position: 'right',
-                    grid: { color: 'rgba(200, 200, 200, 0.05)', borderDash: [5, 5] },
-                    ticks: {
-                        color: '#94a3b8',
-                        callback: function(value) { return formatCurrencyValue(value, currency); }
-                    }
-                }
+                y: { display: true, position: 'right', grid: { color: 'rgba(200, 200, 200, 0.05)', borderDash: [5, 5] }, ticks: { color: '#94a3b8', callback: function(value) { return formatCurrencyValue(value, currency); } } }
             }
         }
     });
