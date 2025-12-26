@@ -193,9 +193,21 @@ async function loadChartForModal(symbol, requestedRange) {
     if(canvas) canvas.style.opacity = '0.5';
 
     try {
-        let interval = '1d';
-        if (requestedRange === '5y' || requestedRange === '10y') interval = '1wk';
-        else if (requestedRange === 'max') interval = '1mo';
+        let interval = '1d'; // Standard: Täglich
+
+        // INTELLIGENTE INTERVALLE
+        if (requestedRange === '1d') {
+            interval = '5m'; // 1 Tag -> 5-Minuten Kerzen
+        } else if (requestedRange === '5d') {
+            interval = '15m'; // 1 Woche -> 15-Minuten Kerzen
+        } else if (requestedRange === '1mo' || requestedRange === '3mo') {
+            interval = '60m'; // 1-3 Monate -> Stunden-Kerzen (optional, oder 1d)
+        } else if (requestedRange === '5y' || requestedRange === '10y') {
+            interval = '1wk'; // Langzeit -> Wöchentlich
+        } else if (requestedRange === 'max') {
+            interval = '1mo'; // Max -> Monatlich
+        }
+        // Alles andere (6mo, 1y, 2y) bleibt bei '1d'
 
         const rawData = await fetchChartData(symbol, requestedRange, interval);
         if(rawData) {
@@ -206,8 +218,6 @@ async function loadChartForModal(symbol, requestedRange) {
                 const rawType = rawData.meta.instrumentType || 'EQUITY';
                 if(modalType) modalType.textContent = TYPE_TRANSLATIONS[rawType] || rawType;
                 
-                // --- UPDATE: Voller Name im Header ---
-                // Wir suchen den besten verfügbaren Namen
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if(modalFullname) modalFullname.textContent = fullName; 
             }

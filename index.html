@@ -104,15 +104,15 @@
                                 </div>
                                 
                                 <!-- TIME RANGE BUTTONS -->
-                                <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg mt-4 md:mt-0 overflow-x-auto max-w-full" id="chart-controls">
-                                    <button data-range="1y" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-600 text-primary dark:text-white shadow-sm transition-all whitespace-nowrap">1J</button>
-                                    <button data-range="2y" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">2J</button>
-                                    <button data-range="5y" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">5J</button>
-                                    <button data-range="10y" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">10J</button>
-                                    <button data-range="max" class="chart-range-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">MAX</button>
+                                <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg mt-4 md:mt-0 overflow-x-auto max-w-full gap-1 no-scrollbar" id="chart-controls">
+                                    <button data-range="1d" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">1T</button>
+                                    <button data-range="5d" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">1W</button>
+                                    <button data-range="1mo" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">1M</button>
+                                    <button data-range="6mo" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">6M</button>
+                                    <button data-range="1y" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-slate-600 text-primary dark:text-white shadow-sm transition-all whitespace-nowrap">1J</button>
+                                    <button data-range="5y" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">5J</button>
+                                    <button data-range="max" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all whitespace-nowrap">MAX</button>
                                 </div>
-                            </div>
-
                             <!-- Chart Container -->
                             <div class="mt-2 w-full h-[450px] relative">
                                 <canvas id="main-chart"></canvas>
