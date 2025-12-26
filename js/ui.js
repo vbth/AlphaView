@@ -1,8 +1,6 @@
 /**
  * UI Module
- * Updates:
- * - Header Price aligned fully right (removed mr-8).
- * - Removed Coins icon from Info Box.
+ * Updates: Cleaned up URL input placeholder and icon style.
  */
 export const formatMoney = (val, currency) => {
     const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
@@ -75,37 +73,31 @@ export function createStockCardHTML(data, qty, url, totalPortfolioValueEUR, eurU
     return `
         <div class="stock-card group relative bg-white dark:bg-dark-surface rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-primary/50 dark:hover:border-neon-accent/50 transition-all duration-300 cursor-pointer overflow-hidden" data-symbol="${data.symbol}">
             <div class="p-5">
-                
-                <!-- HEADER: Preis rechtsbündig (mr-8 entfernt) -->
                 <div class="flex justify-between items-start mb-4 gap-4">
                     <div class="flex-grow min-w-0 pr-2"> 
                         <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate" title="${data.name}">${data.name}</h3>
                         <div class="flex items-center gap-2 text-xs font-mono text-slate-500 mt-1"><span class="font-bold text-slate-700 dark:text-slate-300">${data.symbol}</span><span class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">${data.currency}</span></div>
                     </div>
-                    <!-- HIER: mr-8 entfernt -->
                     <div class="text-right whitespace-nowrap pt-1">
                         <div class="text-xl font-bold font-mono text-slate-900 dark:text-slate-100">${formatMoney(data.price, data.currency)}</div>
                         <div class="text-sm font-medium font-mono ${colorClass}">${formatPercent(data.changePercent)}</div>
                     </div>
                 </div>
 
-                <!-- INFO BOX -->
                 <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 mb-4 border border-slate-100 dark:border-slate-700" onclick="event.stopPropagation()">
                     
-                    <!-- 1. Zeile: Wert & Anteil -->
+                    <!-- Zeile 1 -->
                     <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2 mb-2">
-                        <!-- Links: Anteil -->
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-chart-pie text-slate-400 text-xs"></i>
                             <div class="text-xs font-mono text-slate-500 dark:text-slate-300">${formatPercent(weightPercent)}</div>
                         </div>
-                        <!-- Rechts: Wert (Icon entfernt, nur Text) -->
                         <div class="font-mono font-bold text-slate-900 dark:text-white text-right">
                             ${formatMoney(positionValueNative, data.currency)}
                         </div>
                     </div>
 
-                    <!-- 2. Zeile: Menge -->
+                    <!-- Zeile 2 -->
                     <div class="flex justify-between items-center mb-2">
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-layer-group text-slate-400 text-xs"></i>
@@ -114,15 +106,14 @@ export function createStockCardHTML(data, qty, url, totalPortfolioValueEUR, eurU
                         <input type="number" min="0" step="any" class="qty-input w-24 text-right text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 focus:ring-2 focus:ring-primary outline-none" value="${qty}" data-symbol="${data.symbol}" placeholder="0">
                     </div>
 
-                    <!-- 3. Zeile: URL -->
+                    <!-- Zeile 3: URL (Geändert) -->
                     <div class="flex items-center gap-2 pt-1">
                         <i class="fa-solid fa-link text-slate-400 text-xs"></i>
-                        <input type="text" class="url-input w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${safeUrl}" data-symbol="${data.symbol}" placeholder="Info-Link...">
-                        ${safeUrl ? `<a href="${safeUrl}" target="_blank" class="text-primary hover:text-blue-600" title="Öffnen"><i class="fa-solid fa-external-link-alt"></i></a>` : ''}
+                        <input type="text" class="url-input w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${safeUrl}" data-symbol="${data.symbol}" placeholder="Info-Link einfügen">
+                        ${safeUrl ? `<a href="${safeUrl}" target="_blank" class="text-slate-400 hover:text-primary transition-colors text-[10px]" title="Öffnen"><i class="fa-solid fa-external-link-alt"></i></a>` : ''}
                     </div>
                 </div>
 
-                <!-- FOOTER -->
                 <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-4 border-t border-slate-50 dark:border-slate-800 pt-3">
                     <div class="flex items-center gap-2">
                         <div class="flex items-center gap-1"><i class="fa-solid ${trendIcon}"></i> ${data.trend}</div>
