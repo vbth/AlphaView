@@ -1,6 +1,6 @@
 /**
  * App Module
- * Main Controller: Coordinates Logic, UI, and Events.
+ * Added: Export & Import Logic in DOMContentLoaded
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -41,7 +41,6 @@ async function loadDashboard() {
     try {
         let rateData = null;
         try { rateData = await fetchChartData('EURUSD=X', '5d', '1d'); } catch (e) {}
-        
         const stockPromises = watchlist.map(async (item) => {
             try {
                 const rawData = await fetchChartData(item.symbol, '1y', '1d');
@@ -51,14 +50,12 @@ async function loadDashboard() {
                 return analysis;
             } catch (e) { return null; }
         });
-
         const stockResults = await Promise.all(stockPromises);
         if(rateData && rateData.indicators && rateData.indicators.quote[0].close) {
             const closes = rateData.indicators.quote[0].close;
             const currentRate = closes.filter(c => c).pop();
             if(currentRate) state.eurUsdRate = currentRate;
         }
-
         state.dashboardData = stockResults.filter(r => r !== null);
         renderDashboardGrid();
     } catch (criticalError) { console.error("Dashboard Error:", criticalError); }
@@ -69,25 +66,19 @@ function renderDashboardGrid() {
     const totalEurEl = document.getElementById('total-balance-eur');
     const totalUsdEl = document.getElementById('total-balance-usd');
     const totalPosEl = document.getElementById('total-positions');
-
     if (!totalEurEl) return;
     let totalEUR = 0;
-
     state.dashboardData.forEach(item => {
         const rawValue = item.price * item.qty;
         if (item.currency === 'EUR') totalEUR += rawValue;
         else if (item.currency === 'USD') totalEUR += (rawValue / state.eurUsdRate);
         else totalEUR += rawValue;
     });
-
     const totalUSD = totalEUR * state.eurUsdRate;
     if(totalEurEl) totalEurEl.textContent = formatMoney(totalEUR, 'EUR');
     if(totalUsdEl) totalUsdEl.textContent = formatMoney(totalUSD, 'USD');
     if(totalPosEl) totalPosEl.textContent = state.dashboardData.length;
-
-    gridEl.innerHTML = state.dashboardData
-        .map(data => createStockCardHTML(data, data.qty, totalEUR, state.eurUsdRate))
-        .join('');
+    gridEl.innerHTML = state.dashboardData.map(data => createStockCardHTML(data, data.qty, totalEUR, state.eurUsdRate)).join('');
     attachDashboardEvents();
 }
 
@@ -95,8 +86,7 @@ function attachDashboardEvents() {
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const sym = e.currentTarget.dataset.symbol;
-            if(confirm(`${sym} entfernen?`)) { removeSymbol(sym); loadDashboard(); }
+            if(confirm(`${e.currentTarget.dataset.symbol} entfernen?`)) { removeSymbol(e.currentTarget.dataset.symbol); loadDashboard(); }
         });
     });
     document.querySelectorAll('.stock-card').forEach(card => {
@@ -127,11 +117,8 @@ async function openModal(symbol) {
     modalSymbol.textContent = symbol;
     modalExchange.textContent = '...';
     modalType.textContent = '...';
-    
-    // WICHTIG: Hier auch die ID "dynamic-range-text"
     const rangeText = document.getElementById('dynamic-range-text');
     if(rangeText) rangeText.textContent = 'Lade...';
-    
     modal.classList.remove('hidden');
     updateRangeButtonsUI('1y');
     await loadChartForModal(symbol, '1y');
@@ -236,4 +223,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
     initSearch();
     loadDashboard();
+
+    // EXPORT / IMPORT LOGIC
+    const exportBtn = document.getElementById('export-btn');
+    const importBtn = document.getElementById('import-btn');
+    const importInput = document.getElementById('import-input');
+
+    if(exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            const data = localStorage.getItem('alphaview_portfolio');
+            if(!data) { alert('Depot ist leer.'); return; }
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `alphaview_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        });
+    }
+
+    if(importBtn && importInput) {
+        importBtn.addEventListener('click', () => importInput.click());
+        importInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const json = JSON.parse(event.target.result);
+                    if(Array.isArray(json)) {
+                        localStorage.setItem('alphaview_portfolio', JSON.stringify(json));
+                        location.reload();
+                    } else { alert('Ungültiges Dateiformat. JSON-Array erwartet.'); }
+                } catch(err) { alert('Fehler beim Lesen der Datei.'); console.error(err); }
+            };
+            reader.readAsText(file);
+        });
+    }
 });

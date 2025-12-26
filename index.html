@@ -1,6 +1,6 @@
 <!--
  * AlphaView Entry Point
- * Layout Update: Badges Row + Unique ID for Range Text
+ * Added: Export/Import Buttons in Footer
 -->
 <!DOCTYPE html>
 <html lang="de" class="antialiased">
@@ -45,47 +45,26 @@
         </div>
     </main>
 
-<!-- DETAIL MODAL -->
+    <!-- DETAIL MODAL -->
     <div id="chart-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm transition-opacity"></div>
         <div class="fixed inset-0 z-10 overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                 <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-dark-surface text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-5xl border border-slate-200 dark:border-slate-700 flex flex-col">
-                    
-                    <!-- Close Button -->
                     <div class="absolute top-4 right-4 z-20">
-                        <button type="button" id="close-modal" class="text-slate-400 hover:text-slate-500 focus:outline-none">
-                            <i class="fa-solid fa-xmark text-2xl"></i>
-                        </button>
+                        <button type="button" id="close-modal" class="text-slate-400 hover:text-slate-500 focus:outline-none"><i class="fa-solid fa-xmark text-2xl"></i></button>
                     </div>
-
-                    <!-- Content -->
                     <div class="p-6">
-                        <!-- Header -->
                         <div class="flex flex-col gap-4 mb-4 pr-8">
                             <div>
                                 <h3 class="text-2xl font-bold text-slate-900 dark:text-white leading-tight break-words" id="modal-fullname">Lade Titel...</h3>
-                                
-                                <!-- BADGES ROW -->
                                 <div class="flex flex-wrap gap-2 mt-3 text-xs font-mono text-slate-500 dark:text-slate-400 items-center">
-                                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">
-                                        SYM: <strong id="modal-symbol" class="text-slate-900 dark:text-slate-200">---</strong>
-                                    </span>
-                                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">
-                                        BÖRSE: <strong id="modal-exchange" class="text-slate-900 dark:text-slate-200">---</strong>
-                                    </span>
-                                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">
-                                        TYP: <strong id="modal-type" class="text-slate-900 dark:text-slate-200">---</strong>
-                                    </span>
-                                    
-                                    <!-- ZEITRAUM BADGE (JETZT SCHWARZ/WEISS) -->
-                                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">
-                                        ZEITRAUM: <strong id="dynamic-range-text" class="text-slate-900 dark:text-slate-200">Lade...</strong>
-                                    </span>
+                                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">SYM: <strong id="modal-symbol" class="text-slate-900 dark:text-slate-200">---</strong></span>
+                                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">BÖRSE: <strong id="modal-exchange" class="text-slate-900 dark:text-slate-200">---</strong></span>
+                                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">TYP: <strong id="modal-type" class="text-slate-900 dark:text-slate-200">---</strong></span>
+                                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">ZEITRAUM: <strong id="dynamic-range-text" class="text-slate-900 dark:text-slate-200">...</strong></span>
                                 </div>
                             </div>
-                            
-                            <!-- Controls -->
                             <div class="w-full overflow-x-auto no-scrollbar pb-1">
                                 <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg gap-1 min-w-max" id="chart-controls">
                                     <button data-range="1d" class="chart-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-all">1T</button>
@@ -98,8 +77,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Chart Container -->
                         <div class="w-full h-[400px] sm:h-[500px] relative bg-slate-50 dark:bg-slate-800/30 rounded-lg border border-slate-100 dark:border-slate-800">
                             <canvas id="main-chart"></canvas>
                         </div>
@@ -107,11 +84,31 @@
                 </div>
             </div>
         </div>
-    </div>                            
+    </div>
 
+    <!-- FOOTER WITH DATA TOOLS -->
+    <footer class="bg-white dark:bg-dark-surface border-t border-slate-200 dark:border-slate-700 py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col items-center gap-4">
+            
+            <!-- Export/Import Buttons -->
+            <div class="flex gap-4">
+                <button id="export-btn" class="text-xs font-medium text-slate-500 hover:text-primary dark:hover:text-neon-accent transition-colors flex items-center gap-2 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-download"></i> Depot exportieren (JSON)
+                </button>
+                <button id="import-btn" class="text-xs font-medium text-slate-500 hover:text-primary dark:hover:text-neon-accent transition-colors flex items-center gap-2 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-upload"></i> Depot importieren
+                </button>
+                <input type="file" id="import-input" class="hidden" accept=".json">
+            </div>
 
-    <footer class="bg-white dark:bg-dark-surface border-t border-slate-200 dark:border-slate-700 py-6"><div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400"><p>Local-First PWA running on GitHub Pages.</p></div></footer>
+            <div class="text-center text-xs text-slate-400 dark:text-slate-500">
+                <p>Local-First PWA running on GitHub Pages.</p>
+                <p class="mt-1">&copy; 2025 AlphaView Analytics.</p>
+            </div>
+        </div>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module" src="js/app.js?v=34"></script>
+    <script type="module" src="js/app.js?v=35"></script>
 </body>
 </html>

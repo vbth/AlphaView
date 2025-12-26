@@ -1,7 +1,7 @@
 /**
  * Charts Module
  * Renders interactive charts using Chart.js.
- * Fixed: Removed KW logic completely. Shows exact date range.
+ * Fixed: Removed "Handelstag:" text.
  */
 let chartInstance = null;
 
@@ -10,11 +10,10 @@ const formatCurrencyValue = (val, currency) => {
     return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
 };
 
-// Text Update (Badge)
 function updateRangeInfo(labels, range) {
     const el = document.getElementById('dynamic-range-text');
     
-    if (!el) return; // Silent fail if elements missing
+    if (!el) return;
     if (!labels || labels.length === 0) {
         el.textContent = "Keine Daten";
         return;
@@ -32,10 +31,10 @@ function updateRangeInfo(labels, range) {
         let text = "";
 
         if (range === '1d') {
-            text = `Handelstag: ${fDate(end)} <span class="opacity-50 ml-1 font-normal">(${fmtTime.format(end)})</span>`;
+            // HIER GEÄNDERT: Nur Datum und Uhrzeit
+            text = `${fDate(end)} <span class="opacity-50 ml-1 font-normal">(${fmtTime.format(end)})</span>`;
         } 
         else if (range === '5d') {
-            // HIER IST DIE ÄNDERUNG: Einfach Start bis Ende
             text = `${fDate(start)} – ${fDate(end)}`;
         } 
         else if (range === '1mo' || range === '6mo') {
@@ -66,10 +65,7 @@ export function renderChart(canvasId, rawData, range = '1y') {
     const prices = rawData.indicators.quote[0].close;
     const currency = rawData.meta.currency || 'USD';
 
-    // Dates erstellen
     const labels = timestamps.map(t => new Date(t * 1000));
-
-    // Text aktualisieren
     updateRangeInfo(labels, range);
 
     if (chartInstance) chartInstance.destroy();
@@ -134,14 +130,8 @@ export function renderChart(canvasId, rawData, range = '1y') {
                         callback: function(val, index) {
                             const d = labels[index];
                             if (!d) return '';
-                            
-                            if (range === '1d') {
-                                return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute:'2-digit' });
-                            }
-                            if (range === '5d') {
-                                return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit' });
-                            }
-                            
+                            if (range === '1d') return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute:'2-digit' });
+                            if (range === '5d') return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit' });
                             return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
                         }
                     }
