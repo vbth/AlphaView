@@ -1,6 +1,7 @@
 /**
  * App Module
- * Updated: Mapping 1W to 5d
+ * Main Controller: Coordinates Logic, UI, and Events.
+ * Update: Smart Data Fetching (Loads extra history for SMAs)
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -167,36 +168,43 @@ function updateRangeButtonsUI(activeRange) {
     rangeBtns.forEach(btn => {
         const range = btn.dataset.range;
         if(range === activeRange) {
-            // Aktiv: Slate-100 BG, Primary Text
             btn.classList.remove('text-slate-500', 'dark:text-slate-400', 'hover:bg-slate-50');
             btn.classList.add('bg-slate-100', 'dark:bg-slate-600', 'text-primary', 'dark:text-white');
         } else {
-            // Inaktiv: Slate-500 Text, kein BG
             btn.classList.add('text-slate-500', 'dark:text-slate-400', 'hover:bg-slate-50', 'dark:hover:bg-slate-700');
             btn.classList.remove('bg-slate-100', 'dark:bg-slate-600', 'text-primary', 'dark:text-white');
         }
     });
 }
 
+// SMART DATA LOADING FOR SMAs
 async function loadChartForModal(symbol, requestedRange) {
     const canvasId = 'main-chart';
     const canvas = document.getElementById(canvasId);
     if(canvas) canvas.style.opacity = '0.5';
     try {
         let interval = '1d';
-        let apiRange = requestedRange;
+        let apiRange = requestedRange; // Default: load what is asked
+
+        // SMA BUFFER STRATEGY
+        // Wir laden mehr Daten als nötig, damit die SMAs von Anfang an gezeichnet werden können.
+        // Der Chart zoomt dann automatisch auf den 'requestedRange'.
+        if (requestedRange === '1mo') { apiRange = '1y'; interval = '1d'; } 
+        else if (requestedRange === '6mo') { apiRange = '2y'; interval = '1d'; }
+        else if (requestedRange === '1y') { apiRange = '2y'; interval = '1d'; }
+        else if (requestedRange === '5y') { apiRange = '10y'; interval = '1wk'; }
+        else if (requestedRange === 'max') { apiRange = 'max'; interval = '1mo'; }
         
-        // MAPPING FÜR MODAL
-        if (requestedRange === '1W') { apiRange = '5d'; interval = '15m'; }
-        else if (requestedRange === '1d') interval = '5m';
-        else if (requestedRange === '1mo' || requestedRange === '3mo') interval = '1d';
-        else if (requestedRange === '5y' || requestedRange === '10y') interval = '1wk';
-        else if (requestedRange === 'max') interval = '1mo';
+        // Intraday
+        else if (requestedRange === '1d') { apiRange = '1d'; interval = '5m'; }
+        else if (requestedRange === '1W' || requestedRange === '5d') { apiRange = '5d'; interval = '15m'; }
 
         const rawData = await fetchChartData(symbol, apiRange, interval);
         if(rawData) {
             const analysis = analyze(rawData);
+            // Pass original requestedRange to Chart, so it zooms correctly
             renderChart(canvasId, rawData, requestedRange, analysis);
+            
             if(rawData.meta) {
                 if(modalExchange) modalExchange.textContent = rawData.meta.exchangeName || rawData.meta.exchangeTimezoneName || 'N/A';
                 const rawType = rawData.meta.instrumentType || 'EQUITY';
