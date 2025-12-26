@@ -1,6 +1,7 @@
 /**
  * Analysis Module
  * Calculates financial metrics (SMA, Volatility) from raw data.
+ * Updated: Passes instrumentType to the result object.
  */
 export function analyze(chartResult) {
     const prices = extractPrices(chartResult);
@@ -26,11 +27,22 @@ export function analyze(chartResult) {
     const volatility = stdDev * Math.sqrt(252) * 100;
 
     const fullName = meta.shortName || meta.longName || meta.symbol;
+    // HIER NEU: Typ auslesen
+    const type = meta.instrumentType || 'EQUITY';
 
     return {
-        symbol: meta.symbol, name: fullName, price: currentPrice, currency: meta.currency,
-        change: change, changePercent: changePercent, trend: trend, volatility: volatility,
-        sma50: sma50, sma200: sma200, timestamp: new Date().toLocaleTimeString()
+        symbol: meta.symbol, 
+        name: fullName, 
+        type: type, // <--- NEU
+        price: currentPrice, 
+        currency: meta.currency,
+        change: change, 
+        changePercent: changePercent, 
+        trend: trend, 
+        volatility: volatility,
+        sma50: sma50, 
+        sma200: sma200, 
+        timestamp: new Date().toLocaleTimeString()
     };
 }
 

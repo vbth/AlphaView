@@ -1,7 +1,6 @@
 /**
  * App Module
- * Main Controller: Coordinates Logic, UI, and Events.
- * Updated: Passes SMA Analysis Data to Charts.js & Updates Trend Badge
+ * Updated: Logic for "Copy Portfolio List" button
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -123,7 +122,6 @@ async function openModal(symbol) {
     const rangeText = document.getElementById('dynamic-range-text');
     if(rangeText) rangeText.textContent = 'Lade...';
     
-    // Reset Metrics
     if(modalVol) modalVol.textContent = '---';
     if(modalTrend) modalTrend.textContent = '---';
 
@@ -160,10 +158,7 @@ async function loadChartForModal(symbol, requestedRange) {
 
         const rawData = await fetchChartData(symbol, requestedRange, interval);
         if(rawData) {
-            // Analyse first to get SMAs
             const analysis = analyze(rawData);
-            
-            // Render with analysis data
             renderChart(canvasId, rawData, requestedRange, analysis);
             
             if(rawData.meta) {
@@ -173,7 +168,6 @@ async function loadChartForModal(symbol, requestedRange) {
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if(modalFullname) modalFullname.textContent = fullName; 
                 
-                // Update Trend & Vol
                 if(analysis) {
                     if(modalVol) modalVol.textContent = analysis.volatility ? analysis.volatility.toFixed(1) + '%' : 'n/a';
                     if(modalTrend) {
@@ -253,6 +247,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const importInput = document.getElementById('import-input');
+    // HIER NEU: Copy Button Logic
+    const copyBtn = document.getElementById('copy-list-btn');
+
+    if(copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            if(!state.dashboardData || state.dashboardData.length === 0) {
+                alert("Keine Daten zum Kopieren.");
+                return;
+            }
+
+            // 1. Gesamtwert in EUR berechnen
+            let totalValueEUR = 0;
+            const items = state.dashboardData.map(item => {
+                let valEur = item.price * item.qty;
+                if(item.currency === 'USD') valEur /= state.eurUsdRate;
+                totalValueEUR += valEur;
+                return { ...item, valEur }; // Temporär speichern
+            });
+
+            if(totalValueEUR === 0) totalValueEUR = 1; // Div by Zero Schutz
+
+            // 2. Prozent berechnen und sortieren
+            items.forEach(i => i.percent = (i.valEur / totalValueEUR) * 100);
+            items.sort((a, b) => b.percent - a.percent);
+
+            // 3. Text generieren
+            let text = "DEPOT ZUSAMMENSETZUNG:\n\n";
+            items.forEach(i => {
+                // Deutsch übersetzen falls möglich
+                const typeName = TYPE_TRANSLATIONS[i.type] || i.type;
+                text += `[${i.percent.toFixed(1)}%] ${i.name} (${i.symbol}) - ${typeName}\n`;
+            });
+
+            // 4. Kopieren
+            navigator.clipboard.writeText(text).then(() => {
+                // Kleines visuelles Feedback (Button Text ändern)
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kopiert!';
+                setTimeout(() => copyBtn.innerHTML = originalText, 2000);
+            }).catch(err => {
+                console.error('Copy failed', err);
+                alert('Fehler beim Kopieren.');
+            });
+        });
+    }
 
     if(exportBtn) {
         exportBtn.addEventListener('click', () => {
