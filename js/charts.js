@@ -1,7 +1,7 @@
 /**
  * Charts Module
  * Renders interactive charts using Chart.js.
- * Fixed: '5d' shows actual data range instead of Calendar Week.
+ * Fixed: Removed KW logic completely. Shows exact date range.
  */
 let chartInstance = null;
 
@@ -14,18 +14,13 @@ const formatCurrencyValue = (val, currency) => {
 function updateRangeInfo(labels, range) {
     const el = document.getElementById('dynamic-range-text');
     
-    if (!el) {
-        console.error("Badge Element 'dynamic-range-text' nicht gefunden!");
-        return;
-    }
-    
+    if (!el) return; // Silent fail if elements missing
     if (!labels || labels.length === 0) {
         el.textContent = "Keine Daten";
         return;
     }
 
     try {
-        // Wir nehmen exakt den ersten und letzten Punkt aus den Daten
         const start = labels[0];
         const end = labels[labels.length - 1];
         
@@ -36,17 +31,14 @@ function updateRangeInfo(labels, range) {
 
         let text = "";
 
-        // Logik für den Text
         if (range === '1d') {
-            // "Handelstag: 24.10.2023 (17:30)"
             text = `Handelstag: ${fDate(end)} <span class="opacity-50 ml-1 font-normal">(${fmtTime.format(end)})</span>`;
         } 
         else if (range === '5d') {
-            // "16.10.2023 – 21.10.2023" (Einfach Start bis Ende)
+            // HIER IST DIE ÄNDERUNG: Einfach Start bis Ende
             text = `${fDate(start)} – ${fDate(end)}`;
         } 
         else if (range === '1mo' || range === '6mo') {
-            // "10/2023 – 04/2024"
             text = `${fMonthYear(start).replace('.','/')} – ${fMonthYear(end).replace('.','/')}`;
         } 
         else if (range === '1y') {
@@ -55,7 +47,6 @@ function updateRangeInfo(labels, range) {
             text = (y1 === y2) ? `${y1}` : `${y1} – ${y2}`;
         } 
         else {
-            // Langzeit
             text = `${fYear(start)} – ${fYear(end)}`;
         }
         
@@ -63,7 +54,6 @@ function updateRangeInfo(labels, range) {
 
     } catch (err) {
         console.error("Error formatting date:", err);
-        el.textContent = "Datum Fehler";
     }
 }
 
@@ -145,11 +135,9 @@ export function renderChart(canvasId, rawData, range = '1y') {
                             const d = labels[index];
                             if (!d) return '';
                             
-                            // 1T -> Uhrzeit
                             if (range === '1d') {
                                 return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute:'2-digit' });
                             }
-                            // 1W -> Wochentag + Tag (Mo 12.)
                             if (range === '5d') {
                                 return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit' });
                             }
