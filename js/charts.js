@@ -1,6 +1,7 @@
 /**
  * Charts Module
- * Final Fix: Date Range Text & Axis Formatting
+ * Renders interactive charts using Chart.js.
+ * Fixed: '5d' shows actual data range instead of Calendar Week.
  */
 let chartInstance = null;
 
@@ -8,26 +9,6 @@ const formatCurrencyValue = (val, currency) => {
     const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
     return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
 };
-
-// KW Berechnung
-function getWeekNumber(date) {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-}
-
-// Wochen-Grenzen (Mo-Fr)
-function getWeekBounds(date) {
-    const d = new Date(date);
-    const day = d.getDay() || 7; 
-    if (day !== 1) d.setHours(-24 * (day - 1));
-    const monday = new Date(d);
-    const friday = new Date(d);
-    friday.setDate(monday.getDate() + 4);
-    return { monday, friday };
-}
 
 // Text Update (Badge)
 function updateRangeInfo(labels, range) {
@@ -44,6 +25,7 @@ function updateRangeInfo(labels, range) {
     }
 
     try {
+        // Wir nehmen exakt den ersten und letzten Punkt aus den Daten
         const start = labels[0];
         const end = labels[labels.length - 1];
         
@@ -56,14 +38,15 @@ function updateRangeInfo(labels, range) {
 
         // Logik für den Text
         if (range === '1d') {
+            // "Handelstag: 24.10.2023 (17:30)"
             text = `Handelstag: ${fDate(end)} <span class="opacity-50 ml-1 font-normal">(${fmtTime.format(end)})</span>`;
         } 
         else if (range === '5d') {
-            const kw = getWeekNumber(end);
-            const bounds = getWeekBounds(end);
-            text = `KW ${kw} (${fDate(bounds.monday)} – ${fDate(bounds.friday)})`;
+            // "16.10.2023 – 21.10.2023" (Einfach Start bis Ende)
+            text = `${fDate(start)} – ${fDate(end)}`;
         } 
         else if (range === '1mo' || range === '6mo') {
+            // "10/2023 – 04/2024"
             text = `${fMonthYear(start).replace('.','/')} – ${fMonthYear(end).replace('.','/')}`;
         } 
         else if (range === '1y') {
@@ -72,13 +55,11 @@ function updateRangeInfo(labels, range) {
             text = (y1 === y2) ? `${y1}` : `${y1} – ${y2}`;
         } 
         else {
-            // 5y, 10y, max
+            // Langzeit
             text = `${fYear(start)} – ${fYear(end)}`;
         }
         
-        // Text in das HTML Element schreiben
         el.innerHTML = text;
-        console.log("Range Text updated to:", text); // Debug Log
 
     } catch (err) {
         console.error("Error formatting date:", err);
@@ -98,7 +79,7 @@ export function renderChart(canvasId, rawData, range = '1y') {
     // Dates erstellen
     const labels = timestamps.map(t => new Date(t * 1000));
 
-    // 1. Text aktualisieren
+    // Text aktualisieren
     updateRangeInfo(labels, range);
 
     if (chartInstance) chartInstance.destroy();
@@ -146,7 +127,6 @@ export function renderChart(canvasId, rawData, range = '1y') {
                     callbacks: {
                         title: function(context) {
                             const d = labels[context[0].dataIndex];
-                            // Tooltip
                             if (range === '1d' || range === '5d') {
                                 return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' });
                             }
@@ -169,7 +149,7 @@ export function renderChart(canvasId, rawData, range = '1y') {
                             if (range === '1d') {
                                 return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute:'2-digit' });
                             }
-                            // 1W -> Wochentag + Datum (HIER WAR DAS PROBLEM BEHOBEN)
+                            // 1W -> Wochentag + Tag (Mo 12.)
                             if (range === '5d') {
                                 return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit' });
                             }
