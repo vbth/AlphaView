@@ -1,7 +1,7 @@
 /**
  * Charts Module
  * Engine: TradingView Lightweight Charts
- * Fix: Dedup timestamps to prevent crashes
+ * Fix: Strict Data Sanitization (Sort & Dedup) to prevent crashes.
  */
 
 let chart = null;
@@ -15,13 +15,16 @@ const formatCurrencyValue = (val, currency) => {
     return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
 };
 
-function calculateSMA_Data(timestamps, prices, window) {
+function calculateSMA_Data(sortedData, window) {
     let result = [];
-    for (let i = 0; i < prices.length; i++) {
+    // Wir iterieren über die bereinigten Daten
+    for (let i = 0; i < sortedData.length; i++) {
         if (i < window - 1) continue;
         let sum = 0;
-        for (let j = 0; j < window; j++) sum += prices[i - j];
-        result.push({ time: timestamps[i], value: sum / window });
+        for (let j = 0; j < window; j++) {
+            sum += sortedData[i - j].value;
+        }
+        result.push({ time: sortedData[i].time, value: sum / window });
     }
     return result;
 }
@@ -64,87 +67,110 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    // Check library
+    if (!window.LightweightCharts) {
+        container.innerHTML = '<div class="text-red-500 p-4">Chart Library Error (CDN)</div>';
+        return;
+    }
+
     const timestamps = rawData.timestamp;
     const prices = rawData.indicators.quote[0].close;
     currentCurrency = rawData.meta.currency || 'USD';
 
-    // 1. Data Cleaning & Dedup
-    const lineData = [];
-    const uniqueTimeMap = new Set();
-    let validTimestamps = [];
-    let validPrices = [];
-
+    // 1. DATA SANITIZATION (Critical for TradingView)
+    // Wir erstellen erst eine saubere Liste
+    let dirtyData = [];
     for(let i=0; i<timestamps.length; i++) {
-        if(prices[i] !== null && prices[i] !== undefined) {
-            // Dedup Check: Yahoo sends duplicate seconds sometimes
-            if(uniqueTimeMap.has(timestamps[i])) continue;
-            uniqueTimeMap.add(timestamps[i]);
-
-            lineData.push({ time: timestamps[i], value: prices[i] });
-            validTimestamps.push(timestamps[i]);
-            validPrices.push(prices[i]);
+        if(prices[i] !== null && prices[i] !== undefined && timestamps[i] !== null) {
+            dirtyData.push({ time: timestamps[i], value: prices[i] });
         }
     }
 
-    if(lineData.length === 0) return;
+    if(dirtyData.length === 0) {
+        container.innerHTML = '<div class="text-slate-400 p-10 text-center">Keine Daten verfügbar</div>';
+        return;
+    }
 
-    // Sorting (just to be safe)
-    lineData.sort((a,b) => a.time - b.time);
+    // 2. SORTIEREN (Zwingend erforderlich!)
+    dirtyData.sort((a, b) => a.time - b.time);
 
-    updateRangeInfo(validTimestamps[0], validTimestamps[validTimestamps.length-1], range);
-    updatePerformance(validPrices[0], validPrices[validPrices.length-1]);
+    // 3. DEDUPLIZIEREN (Keine doppelten Zeiten erlaubt)
+    const cleanData = [];
+    const timeSet = new Set();
+    
+    for (const item of dirtyData) {
+        if (!timeSet.has(item.time)) {
+            timeSet.add(item.time);
+            cleanData.push(item);
+        }
+    }
 
+    // 4. UI UPDATES (Mit den sauberen Daten)
+    const firstPoint = cleanData[0];
+    const lastPoint = cleanData[cleanData.length - 1];
+    
+    updateRangeInfo(firstPoint.time, lastPoint.time, range);
+    updatePerformance(firstPoint.value, lastPoint.value);
+
+    // 5. CHART INIT
     if (chart) { chart.remove(); chart = null; }
     container.innerHTML = '';
 
     const isDark = document.documentElement.classList.contains('dark');
-    const bg = 'transparent';
+    const bg = 'transparent'; 
     const gridColor = isDark ? 'rgba(30, 41, 59, 0.5)' : 'rgba(226, 232, 240, 0.5)';
     const textColor = isDark ? '#94a3b8' : '#64748b';
     
-    const startPrice = validPrices[0];
-    const endPrice = validPrices[validPrices.length - 1];
-    const isBullish = endPrice >= startPrice;
-    
+    const isBullish = lastPoint.value >= firstPoint.value;
     const mainColor = isBullish ? '#22c55e' : '#ef4444'; 
     const topColor = isBullish ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)';
     const bottomColor = isBullish ? 'rgba(34, 197, 94, 0.0)' : 'rgba(239, 68, 68, 0.0)';
 
-    chart = LightweightCharts.createChart(container, {
-        width: container.clientWidth,
-        height: container.clientHeight,
-        layout: { background: { type: 'solid', color: bg }, textColor: textColor, fontFamily: 'Inter' },
-        grid: { vertLines: { color: gridColor, style: 2 }, horzLines: { color: gridColor, style: 2 } },
-        rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
-        timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
-        crosshair: { vertLine: { labelVisible: false } },
-        handleScroll: false, handleScale: false, 
-    });
+    try {
+        chart = LightweightCharts.createChart(container, {
+            width: container.clientWidth,
+            height: container.clientHeight || 400, // Fallback Height
+            layout: { background: { type: 'solid', color: bg }, textColor: textColor, fontFamily: 'Inter' },
+            grid: { vertLines: { color: gridColor, style: 2 }, horzLines: { color: gridColor, style: 2 } },
+            rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
+            timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, fixLeftEdge: true, fixRightEdge: true },
+            crosshair: { vertLine: { labelVisible: false } },
+            handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+            handleScale: { axisPressedMouseMove: false, mouseWheel: false, pinch: true }, 
+        });
 
-    areaSeries = chart.addAreaSeries({
-        lineColor: mainColor, topColor: topColor, bottomColor: bottomColor, lineWidth: 2,
-        priceFormat: { type: 'custom', formatter: price => formatCurrencyValue(price, currentCurrency) },
-    });
-    areaSeries.setData(lineData);
+        areaSeries = chart.addAreaSeries({
+            lineColor: mainColor, topColor: topColor, bottomColor: bottomColor, lineWidth: 2,
+            priceFormat: { type: 'custom', formatter: price => formatCurrencyValue(price, currentCurrency) },
+        });
+        
+        areaSeries.setData(cleanData);
 
-    const isIntraday = (range === '1d' || range === '5d');
-    if (!isIntraday && validPrices.length > 50) {
-        sma50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-        const sma50Data = calculateSMA_Data(validTimestamps, validPrices, 50);
-        sma50Series.setData(sma50Data);
+        // 6. SMAs
+        const isIntraday = (range === '1d' || range === '5d');
+        if (!isIntraday && cleanData.length > 50) {
+            sma50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+            sma50Series.setData(calculateSMA_Data(cleanData, 50));
+        }
+        if (!isIntraday && cleanData.length > 200) {
+            sma200Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+            sma200Series.setData(calculateSMA_Data(cleanData, 200));
+        }
+
+        // 7. Resize Observer
+        const resizeObserver = new ResizeObserver(entries => {
+            if (entries.length === 0 || entries[0].target !== container) return;
+            const newRect = entries[0].contentRect;
+            if(newRect.width > 0 && newRect.height > 0) {
+                chart.applyOptions({ width: newRect.width, height: newRect.height });
+            }
+        });
+        resizeObserver.observe(container);
+        
+        chart.timeScale().fitContent();
+
+    } catch(err) {
+        console.error("TradingView Error:", err);
+        container.innerHTML = `<div class="text-red-400 p-10 text-center">Chart Error: ${err.message}</div>`;
     }
-    if (!isIntraday && validPrices.length > 200) {
-        sma200Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-        const sma200Data = calculateSMA_Data(validTimestamps, validPrices, 200);
-        sma200Series.setData(sma200Data);
-    }
-
-    const resizeObserver = new ResizeObserver(entries => {
-        if (entries.length === 0 || entries[0].target !== container) return;
-        const newRect = entries[0].contentRect;
-        chart.applyOptions({ width: newRect.width, height: newRect.height });
-    });
-    resizeObserver.observe(container);
-    
-    chart.timeScale().fitContent();
 }
