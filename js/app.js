@@ -1,6 +1,6 @@
 /**
  * App Module
- * Fixed: Argument order for createStockCardHTML (URL passed correctly)
+ * Updated: Dashboard Range Buttons Logic
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -9,9 +9,11 @@ import { getWatchlist, addSymbol, removeSymbol, updateQuantity, updateUrl } from
 import { renderAppSkeleton, createStockCardHTML, renderSearchResults, formatMoney } from './ui.js';
 import { renderChart } from './charts.js';
 
-const state = { searchDebounce: null, currentSymbol: null, currentRange: '1y', dashboardData: [], eurUsdRate: 1.08 };
+// Add currentDashboardRange to state
+const state = { searchDebounce: null, currentSymbol: null, currentRange: '1y', currentDashboardRange: '1d', dashboardData: [], eurUsdRate: 1.08 };
 const rootEl = document.getElementById('app-root');
 const themeBtn = document.getElementById('theme-toggle');
+// ... other DOM elements ...
 const modal = document.getElementById('chart-modal');
 const modalFullname = document.getElementById('modal-fullname');
 const modalSymbol = document.getElementById('modal-symbol');
@@ -28,6 +30,24 @@ async function loadDashboard() {
     const gridEl = document.getElementById('dashboard-grid');
     const emptyStateEl = document.getElementById('empty-state');
     const summaryEl = document.getElementById('portfolio-summary');
+    const dashRangeBtns = document.querySelectorAll('.dash-range-btn');
+
+    // UI Updates for Dashboard Buttons
+    dashRangeBtns.forEach(btn => {
+        const r = btn.dataset.range;
+        if(r === state.currentDashboardRange) {
+            btn.classList.remove('text-slate-500', 'dark:text-slate-400', 'hover:bg-slate-50', 'dark:hover:bg-slate-700');
+            btn.classList.add('bg-slate-100', 'dark:bg-slate-600', 'text-primary', 'dark:text-white');
+        } else {
+            btn.classList.add('text-slate-500', 'dark:text-slate-400', 'hover:bg-slate-50', 'dark:hover:bg-slate-700');
+            btn.classList.remove('bg-slate-100', 'dark:bg-slate-600', 'text-primary', 'dark:text-white');
+        }
+        // Event Listener (nur einmal hinzufügen wäre besser, aber hier pragmatisch)
+        btn.onclick = () => {
+            state.currentDashboardRange = r;
+            loadDashboard(); // Reload with new range
+        };
+    });
 
     if (!gridEl) return;
     if (watchlist.length === 0) {
@@ -38,18 +58,32 @@ async function loadDashboard() {
     }
     if(emptyStateEl) emptyStateEl.classList.add('hidden');
     if(summaryEl) summaryEl.classList.remove('hidden');
-    if(!gridEl.hasChildNodes()) gridEl.innerHTML = '<div class="col-span-full text-center text-slate-400 py-8 animate-pulse">Lade Kurse & Wechselkurse...</div>';
+    
+    // Only show spinner if we have no data yet
+    if(state.dashboardData.length === 0) gridEl.innerHTML = '<div class="col-span-full text-center text-slate-400 py-8 animate-pulse">Lade Kurse & Wechselkurse...</div>';
 
     try {
         let rateData = null;
         try { rateData = await fetchChartData('EURUSD=X', '5d', '1d'); } catch (e) {}
         const stockPromises = watchlist.map(async (item) => {
             try {
-                const rawData = await fetchChartData(item.symbol, '1y', '1d');
+                // HIER: Nutze state.currentDashboardRange statt fix '1y'
+                // Intervall Logik:
+                let interval = '1d';
+                if(state.currentDashboardRange === '1d') interval = '5m';
+                else if(state.currentDashboardRange === '1W') interval = '15m'; // using 1W here as per your button, API expects 5d usually but we map in fetch logic or just pass it. Wait, fetchChartData uses what logic?
+                // Adjusting fetchChartData inputs:
+                // Yahoo API: range must be standard. My UI uses "1W", API uses "5d". Mapping needed.
+                let apiRange = state.currentDashboardRange;
+                if(apiRange === '1W') { apiRange = '5d'; interval = '15m'; }
+                if(apiRange === '1d') interval = '5m';
+                if(apiRange === '1mo') interval = '1d';
+
+                const rawData = await fetchChartData(item.symbol, apiRange, interval);
                 if (!rawData) return null;
                 const analysis = analyze(rawData);
                 analysis.qty = item.qty;
-                analysis.url = item.url; // URL sichern
+                analysis.url = item.url;
                 return analysis;
             } catch (e) { return null; }
         });
@@ -81,10 +115,7 @@ function renderDashboardGrid() {
     if(totalEurEl) totalEurEl.textContent = formatMoney(totalEUR, 'EUR');
     if(totalUsdEl) totalUsdEl.textContent = formatMoney(totalUSD, 'USD');
     if(totalPosEl) totalPosEl.textContent = state.dashboardData.length;
-    
-    // FIX: URL Parameter korrekt übergeben
     gridEl.innerHTML = state.dashboardData.map(data => createStockCardHTML(data, data.qty, data.url, totalEUR, state.eurUsdRate)).join('');
-    
     attachDashboardEvents();
 }
 
@@ -126,7 +157,7 @@ function attachDashboardEvents() {
     });
 }
 
-// ... (Rest bleibt gleich, da hier keine Fehler waren)
+// ... Rest of modal logic ...
 async function openModal(symbol) {
     if(!modal) return;
     state.currentSymbol = symbol;
@@ -248,6 +279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
     initSearch();
     loadDashboard();
+    // (Restliche Button-Listener für Import/Export bleiben gleich wie vorher)
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const importInput = document.getElementById('import-input');

@@ -1,19 +1,28 @@
 /**
  * Analysis Module
- * Calculates financial metrics (SMA, Volatility) from raw data.
- * Updated: Passes instrumentType to the result object.
+ * Calculates metrics based on the full loaded range.
  */
 export function analyze(chartResult) {
     const prices = extractPrices(chartResult);
     const meta = chartResult.meta;
+    
     if (prices.length < 2) return null;
 
     const currentPrice = prices[prices.length - 1];
-    const prevClose = meta.chartPreviousClose || prices[prices.length - 2];
-    const change = currentPrice - prevClose;
-    const changePercent = (change / prevClose) * 100;
     
-    // Simple Moving Averages
+    // WICHTIG: Wir vergleichen jetzt Start vs. Ende des geladenen Zeitraums
+    // (außer bei 1T/Intraday, da nehmen wir den Close vom Vortag als Referenz für die %-Anzeige)
+    let refPrice = prices[0];
+    
+    // Sonderfall: Wenn chartPreviousClose existiert (bei Intraday), ist das genauer für Tagesperformance
+    if (meta.range === '1d' && meta.chartPreviousClose) {
+        refPrice = meta.chartPreviousClose;
+    }
+
+    const change = currentPrice - refPrice;
+    const changePercent = (refPrice !== 0) ? (change / refPrice) * 100 : 0;
+    
+    // Trend & Volatilität
     const sma50 = calculateSMA(prices, 50);
     const sma200 = calculateSMA(prices, 200);
     
@@ -21,19 +30,17 @@ export function analyze(chartResult) {
     if (currentPrice > sma50 && currentPrice > sma200) trend = 'bullish';
     if (currentPrice < sma50 && currentPrice < sma200) trend = 'bearish';
 
-    // Volatility
     const returns = calculateDailyReturns(prices);
     const stdDev = calculateStdDev(returns);
     const volatility = stdDev * Math.sqrt(252) * 100;
 
     const fullName = meta.shortName || meta.longName || meta.symbol;
-    // HIER NEU: Typ auslesen
     const type = meta.instrumentType || 'EQUITY';
 
     return {
         symbol: meta.symbol, 
         name: fullName, 
-        type: type, // <--- NEU
+        type: type,
         price: currentPrice, 
         currency: meta.currency,
         change: change, 
@@ -42,7 +49,8 @@ export function analyze(chartResult) {
         volatility: volatility,
         sma50: sma50, 
         sma200: sma200, 
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString(),
+        // Wir speichern auch die URL hier nicht, das macht der Store/App Merge
     };
 }
 
