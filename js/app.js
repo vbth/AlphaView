@@ -293,21 +293,18 @@ rangeBtns.forEach(btn => {
     });
 });
 
-// SUCHE REPARIERT: Event Delegation statt direkter Listener
 function initSearch() {
     const input = document.getElementById('header-search-input');
     const resultsContainer = document.getElementById('header-search-results');
     
     if(!input || !resultsContainer) return;
 
-    // 1. Schließen bei Klick außerhalb
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#header-search-input') && !e.target.closest('#header-search-results')) {
             resultsContainer.classList.add('hidden');
         }
     });
 
-    // 2. Klick auf Ergebnis (EVENT DELEGATION - DAS IST DER FIX)
     resultsContainer.addEventListener('click', (e) => {
         const item = e.target.closest('.search-item');
         if (item) {
@@ -321,7 +318,6 @@ function initSearch() {
         }
     });
 
-    // 3. Enter Taste
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             const val = input.value.trim().toUpperCase();
@@ -334,7 +330,6 @@ function initSearch() {
         }
     });
 
-    // 4. Tippen (Suche ausführen)
     input.addEventListener('input', (e) => {
         const query = e.target.value.trim();
         clearTimeout(state.searchDebounce);
@@ -347,7 +342,6 @@ function initSearch() {
         state.searchDebounce = setTimeout(async () => {
             const results = await searchSymbol(query);
             renderSearchResults(results, resultsContainer);
-            // Keine Listener mehr hier, da wir jetzt den Delegation-Listener oben haben
         }, 500);
     });
 }
@@ -379,12 +373,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // REPORT FUNKTION FÜR NOTEBOOK LM
+    // LISTE KOPIEREN (Depot-Zusammensetzung)
     if(copyBtn) {
         copyBtn.addEventListener('click', () => {
             if(!state.dashboardData || state.dashboardData.length === 0) { alert("Keine Daten."); return; }
             
-            const dateStr = new Date().toLocaleDateString('de-DE');
             let totalValueEUR = 0;
             const items = state.dashboardData.map(item => {
                 let valEur = item.price * item.qty;
@@ -394,56 +387,50 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if(totalValueEUR === 0) totalValueEUR = 1;
+
             items.sort((a, b) => b.valEur - a.valEur);
 
-            let md = `# Portfolio Report - Stand: ${dateStr}\n`;
-            md += `Gesamtwert: ${formatMoney(totalValueEUR, 'EUR')}\n\n`;
-            md += `## 1. Aktuelle Marktdaten & Positionen\n`;
-            md += `| Symbol | Name | Typ | Preis | Stück | Wert (EUR) | Anteil | Trend | Volatilität (1J) |\n`;
-            md += `|---|---|---|---|---|---|---|---|---|\n`;
-
+            let text = "DEPOT-ZUSAMMENSETZUNG\n\n";
             items.forEach(i => {
                 const percent = (i.valEur / totalValueEUR) * 100;
-                const trendIcon = i.trend === 'bullish' ? 'Auftrend' : (i.trend === 'bearish' ? 'Abtrend' : 'Neutral');
-                const vol = i.volatility ? i.volatility.toFixed(1) + '%' : 'N/A';
-                md += `| ${i.symbol} | ${i.name} | ${i.type} | ${formatMoney(i.price, i.currency)} | ${i.qty} | ${formatMoney(i.valEur, 'EUR')} | ${percent.toFixed(2)}% | ${trendIcon} | ${vol} |\n`;
+                const typeName = TYPE_TRANSLATIONS[i.type] || i.type;
+                text += `[${percent.toFixed(1).replace('.',',')}%] ${i.name} (${i.symbol}) – ${typeName}\n`;
             });
 
-            md += `\n## 2. Quellen für ETF-Zusammensetzung (Holdings)\n`;
-            md += `Da Yahoo Finance Bots oft blockiert, nutze bitte diese Links für Details:\n\n`;
-
-            items.forEach(i => {
-                if (i.type === 'ETF' || i.type === 'MUTUALFUND') {
-                    md += `**${i.name} (${i.symbol})**:\n`;
-                    md += `- Yahoo Holdings: https://finance.yahoo.com/quote/${i.symbol}/holdings\n`;
-                    md += `- Alternative: https://www.marketwatch.com/investing/fund/${i.symbol.toLowerCase().replace('.de', '')}/holdings\n`;
-                    md += `\n`;
-                }
-            });
-
-            navigator.clipboard.writeText(md).then(() => {
+            navigator.clipboard.writeText(text).then(() => {
                 const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Report kopiert!';
+                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kopiert!';
                 setTimeout(() => copyBtn.innerHTML = originalText, 2000);
-                alert("AI-Report kopiert! Einfach in NotebookLM einfügen.");
             }).catch(err => alert('Fehler beim Kopieren.'));
         });
     }
 
+    // LINKS KOPIEREN (MarketWatch für AI)
     if(copyUrlsBtn) {
         copyUrlsBtn.addEventListener('click', () => {
             if(!state.dashboardData || state.dashboardData.length === 0) { alert("Keine Daten."); return; }
             let text = "";
             const items = [...state.dashboardData].sort((a,b) => a.symbol.localeCompare(b.symbol));
-            let count = 0;
+            
             items.forEach(i => {
-                if(i.url && i.url.trim() !== '') { text += `${i.url}\n`; count++; }
-                if(i.extraUrl && i.extraUrl.trim() !== '') { text += `${i.extraUrl}\n`; count++; }
+                // Symbol bereinigen für MarketWatch (kein .DE, .F etc.)
+                const safeSymbol = i.symbol.split('.')[0].toLowerCase();
+                
+                if(i.type === 'ETF' || i.type === 'MUTUALFUND') {
+                    // Fonds/ETF Links
+                    text += `https://www.marketwatch.com/investing/fund/${safeSymbol}\n`;
+                    text += `https://www.marketwatch.com/investing/fund/${safeSymbol}/holdings\n`;
+                } else {
+                    // Aktien Links
+                    text += `https://www.marketwatch.com/investing/stock/${safeSymbol}\n`;
+                    text += `https://www.marketwatch.com/investing/stock/${safeSymbol}/company-profile\n`;
+                }
+                text += `\n`; // Leerzeile zur Trennung
             });
-            if(count === 0) { alert("Keine URLs hinterlegt."); return; }
+            
             navigator.clipboard.writeText(text).then(() => {
                 const originalText = copyUrlsBtn.innerHTML;
-                copyUrlsBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kopiert!';
+                copyUrlsBtn.innerHTML = '<i class="fa-solid fa-check"></i> MarketWatch Links kopiert!';
                 setTimeout(() => copyUrlsBtn.innerHTML = originalText, 2000);
             });
         });
