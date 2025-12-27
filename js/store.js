@@ -1,7 +1,7 @@
 /**
  * Store Module
  * Manages Portfolio in LocalStorage.
- * Updated: Auto-generates Yahoo Finance URLs.
+ * Updated: Handles 'extraUrl' for News/Holdings.
  */
 const STORAGE_KEY = 'alphaview_portfolio';
 
@@ -10,31 +10,18 @@ function getPortfolio() {
     if (!json) return [];
     let data = JSON.parse(json);
     
-    // MIGRATION & AUTO-FILL
-    // Wir prüfen bei jedem Laden, ob Daten fehlen und ergänzen sie
+    // Migration & Auto-Fill
     if (data.length > 0) {
         let changed = false;
         data = data.map(item => {
-            // Fall 1: Altes Format (nur String)
             if (typeof item === 'string') { 
                 changed = true; 
-                return { 
-                    symbol: item, 
-                    qty: 0, 
-                    url: `https://finance.yahoo.com/quote/${item}/` // Auto-URL
-                }; 
+                return { symbol: item, qty: 0, url: '', extraUrl: '' }; 
             }
-            // Fall 2: URL fehlt oder ist undefined
-            if (!item.url) { 
-                changed = true; 
-                return { 
-                    ...item, 
-                    url: `https://finance.yahoo.com/quote/${item.symbol}/` // Auto-URL nachrüsten
-                }; 
-            }
+            if (item.url === undefined) { changed = true; item.url = ''; }
+            if (item.extraUrl === undefined) { changed = true; item.extraUrl = ''; }
             return item;
         });
-        
         if(changed) savePortfolio(data);
     }
     return data;
@@ -49,14 +36,9 @@ export function getWatchlist() { return getPortfolio(); }
 export function addSymbol(symbol) {
     const portfolio = getPortfolio();
     const upperSymbol = symbol.toUpperCase();
-    
     if (!portfolio.find(p => p.symbol === upperSymbol)) {
-        portfolio.push({ 
-            symbol: upperSymbol, 
-            qty: 0, 
-            // HIER NEU: Automatische URL beim Hinzufügen
-            url: `https://finance.yahoo.com/quote/${upperSymbol}/` 
-        });
+        // Init with empty URLs
+        portfolio.push({ symbol: upperSymbol, qty: 0, url: '', extraUrl: '' });
         savePortfolio(portfolio);
         return true;
     }
@@ -82,6 +64,16 @@ export function updateUrl(symbol, url) {
     const item = portfolio.find(p => p.symbol === symbol);
     if (item) {
         item.url = url ? url.trim() : '';
+        savePortfolio(portfolio);
+    }
+}
+
+// HIER NEU: Extra URL (News/Holdings)
+export function updateExtraUrl(symbol, url) {
+    let portfolio = getPortfolio();
+    const item = portfolio.find(p => p.symbol === symbol);
+    if (item) {
+        item.extraUrl = url ? url.trim() : '';
         savePortfolio(portfolio);
     }
 }

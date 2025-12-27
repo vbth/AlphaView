@@ -1,17 +1,16 @@
 /**
  * App Module
- * Main Controller: Coordinates Logic, UI, and Events.
- * Final Version: Full features (Sort, Range, Export, Import, Copy)
+ * Main Controller
+ * Updated: Auto-generates News/Holdings Links and handles UI events for them.
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
 import { analyze } from './analysis.js';
-import { getWatchlist, addSymbol, removeSymbol, updateQuantity, updateUrl } from './store.js';
-// WICHTIG: updateSortUI muss hier importiert werden
+// WICHTIG: updateExtraUrl importiert
+import { getWatchlist, addSymbol, removeSymbol, updateQuantity, updateUrl, updateExtraUrl } from './store.js';
 import { renderAppSkeleton, createStockCardHTML, renderSearchResults, formatMoney, updateSortUI } from './ui.js';
 import { renderChart } from './charts.js';
 
-// Globaler Status
 const state = { 
     searchDebounce: null, 
     currentSymbol: null, 
@@ -19,8 +18,8 @@ const state = {
     currentDashboardRange: '1d', 
     dashboardData: [], 
     eurUsdRate: 1.08,
-    sortField: 'value', // Default Sortierung: Wert
-    sortDirection: 'desc' // Default: Absteigend
+    sortField: 'value', 
+    sortDirection: 'desc' 
 };
 
 const rootEl = document.getElementById('app-root');
@@ -43,7 +42,6 @@ async function loadDashboard() {
     const summaryEl = document.getElementById('portfolio-summary');
     const dashRangeBtns = document.querySelectorAll('.dash-range-btn');
 
-    // Dashboard Buttons UI Update
     dashRangeBtns.forEach(btn => {
         const r = btn.dataset.range;
         if(r === state.currentDashboardRange) {
@@ -76,16 +74,34 @@ async function loadDashboard() {
             try {
                 let interval = '1d';
                 let apiRange = state.currentDashboardRange;
-                // Mapping
                 if(apiRange === '1W') { apiRange = '5d'; interval = '15m'; }
                 if(apiRange === '1d') interval = '5m';
                 if(apiRange === '1mo') interval = '1d';
 
                 const rawData = await fetchChartData(item.symbol, apiRange, interval);
                 if (!rawData) return null;
+                
                 const analysis = analyze(rawData);
                 analysis.qty = item.qty;
                 analysis.url = item.url;
+                
+                // AUTO LINK GENERATOR
+                if (!analysis.url) {
+                    analysis.url = `https://finance.yahoo.com/quote/${item.symbol}`;
+                    updateUrl(item.symbol, analysis.url);
+                }
+
+                if (!item.extraUrl) {
+                    if (analysis.type === 'ETF' || analysis.type === 'MUTUALFUND') {
+                         analysis.extraUrl = `https://finance.yahoo.com/quote/${item.symbol}/holdings`;
+                    } else {
+                         analysis.extraUrl = `https://finance.yahoo.com/quote/${item.symbol}/news`;
+                    }
+                    updateExtraUrl(item.symbol, analysis.extraUrl);
+                } else {
+                    analysis.extraUrl = item.extraUrl;
+                }
+
                 return analysis;
             } catch (e) { return null; }
         });
@@ -111,8 +127,6 @@ function renderDashboardGrid() {
     if (!totalEurEl) return;
     
     let totalEUR = 0;
-
-    // 1. Prepare Data & Calc Total
     const preparedData = state.dashboardData.map(item => {
         let valEur = item.price * item.qty;
         if (item.currency === 'USD') valEur /= state.eurUsdRate;
@@ -122,51 +136,38 @@ function renderDashboardGrid() {
 
     const totalUSD = totalEUR * state.eurUsdRate;
     
-    // 2. Sort Data
     preparedData.sort((a, b) => {
         let valA, valB;
         if (state.sortField === 'name') {
-            valA = a.name.toLowerCase();
-            valB = b.name.toLowerCase();
+            valA = a.name.toLowerCase(); valB = b.name.toLowerCase();
             if (state.sortDirection === 'asc') return valA.localeCompare(valB);
             return valB.localeCompare(valA);
         } else {
-            // value or percent (same logic)
-            valA = a.valEur;
-            valB = b.valEur;
+            valA = a.valEur; valB = b.valEur;
             if (state.sortDirection === 'asc') return valA - valB;
             return valB - valA;
         }
     });
 
-    // 3. UI Updates
-    updateSortUI(state.sortField, state.sortDirection); // Pfeile aktualisieren
-    
+    updateSortUI(state.sortField, state.sortDirection);
     if(totalEurEl) totalEurEl.textContent = formatMoney(totalEUR, 'EUR');
     if(totalUsdEl) totalUsdEl.textContent = formatMoney(totalUSD, 'USD');
     if(totalPosEl) totalPosEl.textContent = state.dashboardData.length;
     
-    // 4. Render Grid
+    // HIER: Beide URLs übergeben
     gridEl.innerHTML = preparedData.map(data => 
-        createStockCardHTML(data, data.qty, data.url, totalEUR, state.eurUsdRate)
+        createStockCardHTML(data, data.qty, data.url, data.extraUrl, totalEUR, state.eurUsdRate)
     ).join('');
     
     attachDashboardEvents();
 }
 
 function attachDashboardEvents() {
-    // SORT BUTTONS
     document.querySelectorAll('.sort-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const field = btn.dataset.sort;
-            if (state.sortField === field) {
-                // Toggle direction
-                state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                // New field
-                state.sortField = field;
-                state.sortDirection = (field === 'name') ? 'asc' : 'desc';
-            }
+            if (state.sortField === field) state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
+            else { state.sortField = field; state.sortDirection = (field === 'name') ? 'asc' : 'desc'; }
             renderDashboardGrid();
         });
     });
@@ -195,6 +196,7 @@ function attachDashboardEvents() {
         });
         input.addEventListener('click', (e) => e.stopPropagation());
     });
+    // URL 1 Listener
     document.querySelectorAll('.url-input').forEach(input => {
         input.addEventListener('change', (e) => {
             const sym = e.target.dataset.symbol;
@@ -206,10 +208,21 @@ function attachDashboardEvents() {
         });
         input.addEventListener('click', (e) => e.stopPropagation());
     });
+    // URL 2 Listener (Extra)
+    document.querySelectorAll('.extra-url-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const sym = e.target.dataset.symbol;
+            const newUrl = e.target.value;
+            updateExtraUrl(sym, newUrl);
+            const item = state.dashboardData.find(d => d.symbol === sym);
+            if(item) item.extraUrl = newUrl;
+            renderDashboardGrid();
+        });
+        input.addEventListener('click', (e) => e.stopPropagation());
+    });
 }
 
-// ... MODAL LOGIC ...
-
+// ... (Modal Logic & Chart Loading -> unchanged but included)
 async function openModal(symbol) {
     if(!modal) return;
     state.currentSymbol = symbol;
@@ -222,14 +235,11 @@ async function openModal(symbol) {
     if(rangeText) rangeText.textContent = 'Lade...';
     if(modalVol) modalVol.textContent = '---';
     if(modalTrend) modalTrend.textContent = '---';
-
     modal.classList.remove('hidden');
     updateRangeButtonsUI('1y');
     await loadChartForModal(symbol, '1y');
 }
-
 function closeModal() { if(modal) modal.classList.add('hidden'); state.currentSymbol = null; }
-
 function updateRangeButtonsUI(activeRange) {
     rangeBtns.forEach(btn => {
         const range = btn.dataset.range;
@@ -242,7 +252,6 @@ function updateRangeButtonsUI(activeRange) {
         }
     });
 }
-
 async function loadChartForModal(symbol, requestedRange) {
     const canvasId = 'main-chart';
     const canvas = document.getElementById(canvasId);
@@ -250,7 +259,6 @@ async function loadChartForModal(symbol, requestedRange) {
     try {
         let interval = '1d';
         let apiRange = requestedRange;
-
         if (requestedRange === '1mo') { apiRange = '1y'; interval = '1d'; } 
         else if (requestedRange === '6mo') { apiRange = '2y'; interval = '1d'; }
         else if (requestedRange === '1y') { apiRange = '2y'; interval = '1d'; }
@@ -263,14 +271,12 @@ async function loadChartForModal(symbol, requestedRange) {
         if(rawData) {
             const analysis = analyze(rawData);
             renderChart(canvasId, rawData, requestedRange, analysis);
-            
             if(rawData.meta) {
                 if(modalExchange) modalExchange.textContent = rawData.meta.exchangeName || rawData.meta.exchangeTimezoneName || 'N/A';
                 const rawType = rawData.meta.instrumentType || 'EQUITY';
                 if(modalType) modalType.textContent = TYPE_TRANSLATIONS[rawType] || rawType;
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if(modalFullname) modalFullname.textContent = fullName; 
-                
                 if(analysis) {
                     if(modalVol) modalVol.textContent = analysis.volatility ? analysis.volatility.toFixed(1) + '%' : 'n/a';
                     if(modalTrend) {
@@ -287,7 +293,6 @@ async function loadChartForModal(symbol, requestedRange) {
     } catch (e) { console.error(e); if(modalFullname) modalFullname.textContent = "Fehler"; } 
     finally { if(canvas) canvas.style.opacity = '1'; }
 }
-
 rangeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         if(!state.currentSymbol) return;
@@ -297,7 +302,6 @@ rangeBtns.forEach(btn => {
         loadChartForModal(state.currentSymbol, range);
     });
 });
-
 function initSearch() {
     const input = document.getElementById('search-input');
     const resultsContainer = document.getElementById('search-results');
@@ -335,7 +339,6 @@ function initSearch() {
         }, 500);
     });
 }
-
 document.addEventListener('DOMContentLoaded', async () => {
     const currentTheme = initTheme();
     const updateIcon = (mode) => { const icon = themeBtn?.querySelector('i'); if(icon) { if (mode === 'dark') { icon.classList.remove('fa-moon'); icon.classList.add('fa-sun'); } else { icon.classList.remove('fa-sun'); icon.classList.add('fa-moon'); } } };
@@ -346,7 +349,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
     initSearch();
     loadDashboard();
-
+    
+    // Copy/Export Logic
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const importInput = document.getElementById('import-input');
@@ -389,10 +393,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             let count = 0;
             items.forEach(i => {
                 if(i.url && i.url.trim() !== '') {
-                    const safeName = i.name || i.symbol;
-                    text += `${safeName} (${i.symbol}):\n${i.url}\n\n`;
+                    text += `${i.name} (${i.symbol}):\n${i.url}\n`;
                     count++;
                 }
+                if(i.extraUrl && i.extraUrl.trim() !== '') {
+                    text += `--> News/Holdings: ${i.extraUrl}\n`;
+                }
+                text += '\n';
             });
             if(count === 0) { alert("Keine URLs hinterlegt."); return; }
             navigator.clipboard.writeText(text).then(() => {
