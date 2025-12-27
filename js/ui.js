@@ -1,6 +1,6 @@
 /**
  * UI Module
- * Updates: Added Sort Controls bar above grid.
+ * Updates: Sort Controls added, Exporting updateSortUI
  */
 export const formatMoney = (val, currency) => {
     const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
@@ -11,6 +11,25 @@ const formatPercent = (val) => {
     const sign = val >= 0 ? '+' : '';
     return `${sign}${val.toFixed(2).replace('.', ',')}%`;
 };
+
+// HIER NEU: Exportierte Funktion für Sortier-Buttons
+export function updateSortUI(activeField, direction) {
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+        const icon = btn.querySelector('i');
+        const field = btn.dataset.sort;
+        
+        // Reset Styles
+        btn.classList.remove('bg-slate-100', 'dark:bg-slate-600', 'text-primary', 'dark:text-white');
+        icon.className = 'fa-solid fa-sort text-slate-400 ml-1';
+
+        // Set Active Style
+        if (field === activeField) {
+            btn.classList.add('bg-slate-100', 'dark:bg-slate-600', 'text-primary', 'dark:text-white');
+            if (direction === 'asc') icon.className = 'fa-solid fa-arrow-up-short-wide ml-1';
+            else icon.className = 'fa-solid fa-arrow-down-wide-short ml-1';
+        }
+    });
+}
 
 export function renderAppSkeleton(container) {
     container.innerHTML = `
@@ -50,7 +69,7 @@ export function renderAppSkeleton(container) {
             </div>
         </div>
 
-        <!-- SORT CONTROLS (NEU) -->
+        <!-- SORT CONTROLS -->
         <div class="flex justify-end mb-4 px-1 gap-2">
             <span class="text-xs text-slate-400 self-center mr-2">Sortieren nach:</span>
             <button class="sort-btn text-xs font-medium px-3 py-1 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors flex items-center gap-1" data-sort="name">
@@ -74,26 +93,6 @@ export function renderAppSkeleton(container) {
     `;
 }
 
-// Helfer für Sortier-Icons
-export function updateSortUI(activeField, direction) {
-    document.querySelectorAll('.sort-btn').forEach(btn => {
-        const icon = btn.querySelector('i');
-        const field = btn.dataset.sort;
-        
-        // Reset Styles
-        btn.classList.remove('bg-slate-100', 'dark:bg-slate-600', 'text-primary', 'dark:text-white');
-        icon.className = 'fa-solid fa-sort text-slate-400 ml-1';
-
-        // Set Active Style
-        if (field === activeField) {
-            btn.classList.add('bg-slate-100', 'dark:bg-slate-600', 'text-primary', 'dark:text-white');
-            if (direction === 'asc') icon.className = 'fa-solid fa-arrow-up-short-wide ml-1';
-            else icon.className = 'fa-solid fa-arrow-down-wide-short ml-1';
-        }
-    });
-}
-
-// ... createStockCardHTML & renderSearchResults bleiben gleich ...
 export function createStockCardHTML(data, qty, url, totalPortfolioValueEUR, eurUsdRate) {
     const isUp = data.change >= 0;
     const colorClass = isUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
@@ -136,7 +135,7 @@ export function createStockCardHTML(data, qty, url, totalPortfolioValueEUR, eurU
                     </div>
                     <div class="flex items-center gap-2 pt-1">
                         <i class="fa-solid fa-link text-slate-400 text-xs"></i>
-                        <input type="text" class="url-input w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${safeUrl}" data-symbol="${data.symbol}" placeholder="Info-Link...">
+                        <input type="text" class="url-input w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${safeUrl}" data-symbol="${data.symbol}" placeholder="Info-Link einfügen">
                         ${safeUrl ? `<a href="${safeUrl}" target="_blank" class="text-primary hover:text-blue-600" title="Öffnen"><i class="fa-solid fa-external-link-alt"></i></a>` : ''}
                     </div>
                 </div>
