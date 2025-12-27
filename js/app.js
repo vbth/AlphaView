@@ -1,7 +1,6 @@
 /**
  * App Module
  * Main Controller
- * Fix: Moved Sort Event Listeners to Init to prevent stacking/glitching.
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -50,7 +49,6 @@ async function loadDashboard() {
             btn.classList.add('text-slate-500', 'dark:text-slate-400', 'hover:bg-slate-50', 'dark:hover:bg-slate-700');
             btn.classList.remove('bg-slate-100', 'dark:bg-slate-600', 'text-primary', 'dark:text-white');
         }
-        // Fix: Remove old listener approach, re-assign onclick is safe here
         btn.onclick = () => { state.currentDashboardRange = r; loadDashboard(); };
     });
 
@@ -135,7 +133,6 @@ function renderDashboardGrid() {
 
     const totalUSD = totalEUR * state.eurUsdRate;
     
-    // Sortierung anwenden
     preparedData.sort((a, b) => {
         let valA, valB;
         if (state.sortField === 'name') {
@@ -163,12 +160,10 @@ function renderDashboardGrid() {
         createStockCardHTML(data, data.qty, data.url, data.extraUrl, totalEUR, state.eurUsdRate)
     ).join('');
     
-    // Nur DIESE Events müssen bei jedem Render neu gebunden werden, da die Elemente neu sind
     attachCardEvents(); 
 }
 
 function attachCardEvents() {
-    // Buttons IN DEN KARTEN (müssen neu gebunden werden)
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -217,7 +212,6 @@ function attachCardEvents() {
     });
 }
 
-// ... Modal & Chart (unverändert) ...
 async function openModal(symbol) {
     if(!modal) return;
     state.currentSymbol = symbol;
@@ -299,28 +293,27 @@ rangeBtns.forEach(btn => {
     });
 });
 
-// SUCHE: Angepasst für Header-Elemente
+// SUCHE REPARIERT: Event Delegation statt direkter Listener
 function initSearch() {
-    // Neue IDs nutzen
     const input = document.getElementById('header-search-input');
     const resultsContainer = document.getElementById('header-search-results');
-    // Spinner ist im Header nicht nötig / zu wenig Platz, wir entfernen ihn logisch oder nutzen ein Icon
     
-    if(!input) return;
+    if(!input || !resultsContainer) return;
 
-    // Click outside handler
+    // 1. Schließen bei Klick außerhalb
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#header-search-input') && !e.target.closest('#header-search-results')) {
             resultsContainer.classList.add('hidden');
         }
     });
 
-    // Enter Key
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const val = input.value.trim().toUpperCase();
-            if (val.length > 0) {
-                if(addSymbol(val)) console.log(`Added: ${val}`);
+    // 2. Klick auf Ergebnis (EVENT DELEGATION - DAS IST DER FIX)
+    resultsContainer.addEventListener('click', (e) => {
+        const item = e.target.closest('.search-item');
+        if (item) {
+            const symbol = item.dataset.symbol;
+            if(symbol) {
+                addSymbol(symbol);
                 input.value = '';
                 resultsContainer.classList.add('hidden');
                 loadDashboard();
@@ -328,7 +321,20 @@ function initSearch() {
         }
     });
 
-    // Input Key
+    // 3. Enter Taste
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const val = input.value.trim().toUpperCase();
+            if (val.length > 0) {
+                addSymbol(val);
+                input.value = '';
+                resultsContainer.classList.add('hidden');
+                loadDashboard();
+            }
+        }
+    });
+
+    // 4. Tippen (Suche ausführen)
     input.addEventListener('input', (e) => {
         const query = e.target.value.trim();
         clearTimeout(state.searchDebounce);
@@ -338,27 +344,15 @@ function initSearch() {
             return; 
         }
 
-        // Suche starten
         state.searchDebounce = setTimeout(async () => {
             const results = await searchSymbol(query);
-            // Render (nutzt existierende Funktion aus ui.js)
             renderSearchResults(results, resultsContainer);
-            
-            // Klick-Event für Ergebnisse
-            document.querySelectorAll('.search-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    addSymbol(item.dataset.symbol);
-                    input.value = '';
-                    resultsContainer.classList.add('hidden');
-                    loadDashboard();
-                });
-            });
+            // Keine Listener mehr hier, da wir jetzt den Delegation-Listener oben haben
         }, 500);
     });
 }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-// APP START
 document.addEventListener('DOMContentLoaded', async () => {
     const currentTheme = initTheme();
     const updateIcon = (mode) => { const icon = themeBtn?.querySelector('i'); if(icon) { if (mode === 'dark') { icon.classList.remove('fa-moon'); icon.classList.add('fa-sun'); } else { icon.classList.remove('fa-sun'); icon.classList.add('fa-moon'); } } };
@@ -370,14 +364,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSearch();
     loadDashboard();
 
-    // Export/Import
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const importInput = document.getElementById('import-input');
     const copyBtn = document.getElementById('copy-list-btn');
     const copyUrlsBtn = document.getElementById('copy-urls-btn');
     
-    // Sort Buttons Listener (EINMALIG HIER, NICHT IN RENDER LOOP)
     document.querySelectorAll('.sort-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const field = btn.dataset.sort;
@@ -387,10 +379,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // ... (Copy/Export Logic unchanged) ...
+    // REPORT FUNKTION FÜR NOTEBOOK LM
     if(copyBtn) {
         copyBtn.addEventListener('click', () => {
             if(!state.dashboardData || state.dashboardData.length === 0) { alert("Keine Daten."); return; }
+            
+            const dateStr = new Date().toLocaleDateString('de-DE');
             let totalValueEUR = 0;
             const items = state.dashboardData.map(item => {
                 let valEur = item.price * item.qty;
@@ -398,20 +392,40 @@ document.addEventListener('DOMContentLoaded', async () => {
                 totalValueEUR += valEur;
                 return { ...item, valEur };
             });
+
             if(totalValueEUR === 0) totalValueEUR = 1;
-            items.forEach(i => i.percent = (i.valEur / totalValueEUR) * 100);
-            items.sort((a, b) => b.percent - a.percent);
-            let text = "DEPOT-ZUSAMMENSETZUNG\n\n";
+            items.sort((a, b) => b.valEur - a.valEur);
+
+            let md = `# Portfolio Report - Stand: ${dateStr}\n`;
+            md += `Gesamtwert: ${formatMoney(totalValueEUR, 'EUR')}\n\n`;
+            md += `## 1. Aktuelle Marktdaten & Positionen\n`;
+            md += `| Symbol | Name | Typ | Preis | Stück | Wert (EUR) | Anteil | Trend | Volatilität (1J) |\n`;
+            md += `|---|---|---|---|---|---|---|---|---|\n`;
+
             items.forEach(i => {
-                const safeName = i.name || i.symbol || "Unbekannt";
-                const safeType = i.type || 'EQUITY';
-                const typeName = TYPE_TRANSLATIONS[safeType] || safeType;
-                text += `[${i.percent.toFixed(1).replace('.',',')}%] ${safeName} (${i.symbol}) – ${typeName}\n`;
+                const percent = (i.valEur / totalValueEUR) * 100;
+                const trendIcon = i.trend === 'bullish' ? 'Auftrend' : (i.trend === 'bearish' ? 'Abtrend' : 'Neutral');
+                const vol = i.volatility ? i.volatility.toFixed(1) + '%' : 'N/A';
+                md += `| ${i.symbol} | ${i.name} | ${i.type} | ${formatMoney(i.price, i.currency)} | ${i.qty} | ${formatMoney(i.valEur, 'EUR')} | ${percent.toFixed(2)}% | ${trendIcon} | ${vol} |\n`;
             });
-            navigator.clipboard.writeText(text).then(() => {
+
+            md += `\n## 2. Quellen für ETF-Zusammensetzung (Holdings)\n`;
+            md += `Da Yahoo Finance Bots oft blockiert, nutze bitte diese Links für Details:\n\n`;
+
+            items.forEach(i => {
+                if (i.type === 'ETF' || i.type === 'MUTUALFUND') {
+                    md += `**${i.name} (${i.symbol})**:\n`;
+                    md += `- Yahoo Holdings: https://finance.yahoo.com/quote/${i.symbol}/holdings\n`;
+                    md += `- Alternative: https://www.marketwatch.com/investing/fund/${i.symbol.toLowerCase().replace('.de', '')}/holdings\n`;
+                    md += `\n`;
+                }
+            });
+
+            navigator.clipboard.writeText(md).then(() => {
                 const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kopiert!';
+                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Report kopiert!';
                 setTimeout(() => copyBtn.innerHTML = originalText, 2000);
+                alert("AI-Report kopiert! Einfach in NotebookLM einfügen.");
             }).catch(err => alert('Fehler beim Kopieren.'));
         });
     }
