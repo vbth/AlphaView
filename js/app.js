@@ -1,7 +1,7 @@
 /**
  * App Module
- * Main Controller: Coordinates Logic, UI, and Events.
- * Update: Smart Data Fetching (Loads extra history for SMAs)
+ * Main Controller
+ * Updated: MAX view uses weekly data (1wk) to show SMA200.
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -177,23 +177,22 @@ function updateRangeButtonsUI(activeRange) {
     });
 }
 
-// SMART DATA LOADING FOR SMAs
 async function loadChartForModal(symbol, requestedRange) {
     const canvasId = 'main-chart';
     const canvas = document.getElementById(canvasId);
     if(canvas) canvas.style.opacity = '0.5';
     try {
         let interval = '1d';
-        let apiRange = requestedRange; // Default: load what is asked
+        let apiRange = requestedRange; // Buffer logic
 
-        // SMA BUFFER STRATEGY
-        // Wir laden mehr Daten als nötig, damit die SMAs von Anfang an gezeichnet werden können.
-        // Der Chart zoomt dann automatisch auf den 'requestedRange'.
+        // SMA BUFFER & INTERVAL LOGIC
         if (requestedRange === '1mo') { apiRange = '1y'; interval = '1d'; } 
         else if (requestedRange === '6mo') { apiRange = '2y'; interval = '1d'; }
         else if (requestedRange === '1y') { apiRange = '2y'; interval = '1d'; }
         else if (requestedRange === '5y') { apiRange = '10y'; interval = '1wk'; }
-        else if (requestedRange === 'max') { apiRange = 'max'; interval = '1mo'; }
+        
+        // FIX: MAX View uses Weekly data now to allow SMA200 calculation (200 weeks vs 200 months)
+        else if (requestedRange === 'max') { apiRange = 'max'; interval = '1wk'; }
         
         // Intraday
         else if (requestedRange === '1d') { apiRange = '1d'; interval = '5m'; }
@@ -202,7 +201,6 @@ async function loadChartForModal(symbol, requestedRange) {
         const rawData = await fetchChartData(symbol, apiRange, interval);
         if(rawData) {
             const analysis = analyze(rawData);
-            // Pass original requestedRange to Chart, so it zooms correctly
             renderChart(canvasId, rawData, requestedRange, analysis);
             
             if(rawData.meta) {
@@ -211,6 +209,7 @@ async function loadChartForModal(symbol, requestedRange) {
                 if(modalType) modalType.textContent = TYPE_TRANSLATIONS[rawType] || rawType;
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if(modalFullname) modalFullname.textContent = fullName; 
+                
                 if(analysis) {
                     if(modalVol) modalVol.textContent = analysis.volatility ? analysis.volatility.toFixed(1) + '%' : 'n/a';
                     if(modalTrend) {
