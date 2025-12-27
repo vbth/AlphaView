@@ -116,7 +116,7 @@ export function createStockCardHTML(data, qty, url, extraUrl, totalPortfolioValu
                     <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2 mb-2">
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-chart-pie text-slate-400 text-xs"></i>
-                            <div class="text-xs font-mono text-slate-500 dark:text-slate-300">${formatPercent(weightPercent)}</div>
+                            <div class="text-xs font-mono text-slate-500 dark:text-slate-300">${weightPercent.toFixed(2).replace('.', ',')}%</div>
                         </div>
                         <div class="font-mono font-bold text-slate-900 dark:text-white text-right">
                             ${formatMoney(positionValueNative, data.currency)}
@@ -125,7 +125,7 @@ export function createStockCardHTML(data, qty, url, extraUrl, totalPortfolioValu
                     <div class="flex justify-between items-center mb-2">
                         <div class="flex items-center gap-2">
                             <i class="fa-solid fa-layer-group text-slate-400 text-xs"></i>
-                            <label class="text-xs text-slate-500">Menge</label>
+                            <label class="text-xs text-slate-500">Stückzahl</label>
                         </div>
                         <input type="number" min="0" step="any" class="qty-input w-24 text-right text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 focus:ring-2 focus:ring-primary outline-none" value="${qty}" data-symbol="${data.symbol}" placeholder="0">
                     </div>
