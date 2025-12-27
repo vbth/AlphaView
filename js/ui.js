@@ -159,7 +159,7 @@ export function createStockCardHTML(data, qty, url, extraUrl, totalPortfolioValu
                     <!-- ZEILE 3: Info Link -->
                     <div class="flex items-center gap-2 pt-1">
                         <i class="fa-solid fa-link text-slate-400 text-xs"></i>
-                        <input type="text" class="url-input w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${safeUrl}" data-symbol="${data.symbol}" placeholder="Info-Link einfügen">
+                        <input type="text" class="url-input w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${safeUrl}" data-symbol="${data.symbol}" placeholder="Info-Link">
                         ${safeUrl ? `<a href="${safeUrl}" target="_blank" class="text-primary hover:text-blue-600" title="Öffnen"><i class="fa-solid fa-external-link-alt text-xs"></i></a>` : ''}
                     </div>
 
