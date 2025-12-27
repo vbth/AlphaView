@@ -1,15 +1,27 @@
 /**
  * App Module
- * Updated: Performance Sorting & ESC Key
+ * Main Controller: Coordinates Logic, UI, and Events.
+ * Final Fix: Restored Auto-Link Logic for News/Holdings
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
 import { analyze } from './analysis.js';
-import { getWatchlist, addSymbol, removeSymbol, updateQuantity, updateUrl } from './store.js';
+// WICHTIG: updateExtraUrl ist hier dabei
+import { getWatchlist, addSymbol, removeSymbol, updateQuantity, updateUrl, updateExtraUrl } from './store.js';
 import { renderAppSkeleton, createStockCardHTML, renderSearchResults, formatMoney, updateSortUI } from './ui.js';
 import { renderChart } from './charts.js';
 
-const state = { searchDebounce: null, currentSymbol: null, currentRange: '1y', currentDashboardRange: '1d', dashboardData: [], eurUsdRate: 1.08, sortField: 'value', sortDirection: 'desc' };
+const state = { 
+    searchDebounce: null, 
+    currentSymbol: null, 
+    currentRange: '1y', 
+    currentDashboardRange: '1d', 
+    dashboardData: [], 
+    eurUsdRate: 1.08,
+    sortField: 'value', 
+    sortDirection: 'desc' 
+};
+
 const rootEl = document.getElementById('app-root');
 const themeBtn = document.getElementById('theme-toggle');
 const modal = document.getElementById('chart-modal');
@@ -51,6 +63,7 @@ async function loadDashboard() {
     }
     if(emptyStateEl) emptyStateEl.classList.add('hidden');
     if(summaryEl) summaryEl.classList.remove('hidden');
+    
     if(state.dashboardData.length === 0) gridEl.innerHTML = '<div class="col-span-full text-center text-slate-400 py-8 animate-pulse">Lade Kurse & Wechselkurse...</div>';
 
     try {
@@ -67,19 +80,44 @@ async function loadDashboard() {
 
                 const rawData = await fetchChartData(item.symbol, apiRange, interval);
                 if (!rawData) return null;
+                
                 const analysis = analyze(rawData);
                 analysis.qty = item.qty;
                 analysis.url = item.url;
+                
+                // --- AUTO LINK LOGIC START ---
+                // 1. Haupt-Link (Yahoo Übersicht)
+                if (!analysis.url) {
+                    analysis.url = `https://finance.yahoo.com/quote/${item.symbol}`;
+                    updateUrl(item.symbol, analysis.url);
+                }
+
+                // 2. Extra-Link (News oder Holdings)
+                if (!item.extraUrl) {
+                    if (analysis.type === 'ETF' || analysis.type === 'MUTUALFUND') {
+                         analysis.extraUrl = `https://finance.yahoo.com/quote/${item.symbol}/holdings`;
+                    } else {
+                         // Aktien, Krypto, etc. -> News
+                         analysis.extraUrl = `https://finance.yahoo.com/quote/${item.symbol}/news`;
+                    }
+                    updateExtraUrl(item.symbol, analysis.extraUrl); // Speichern
+                } else {
+                    analysis.extraUrl = item.extraUrl; // Vorhandenen nutzen
+                }
+                // --- AUTO LINK LOGIC END ---
+
                 return analysis;
             } catch (e) { return null; }
         });
 
         const stockResults = await Promise.all(stockPromises);
+        
         if(rateData && rateData.indicators && rateData.indicators.quote[0].close) {
             const closes = rateData.indicators.quote[0].close;
             const currentRate = closes.filter(c => c).pop();
             if(currentRate) state.eurUsdRate = currentRate;
         }
+
         state.dashboardData = stockResults.filter(r => r !== null);
         renderDashboardGrid();
     } catch (criticalError) { console.error("Dashboard Error:", criticalError); }
@@ -91,6 +129,7 @@ function renderDashboardGrid() {
     const totalUsdEl = document.getElementById('total-balance-usd');
     const totalPosEl = document.getElementById('total-positions');
     if (!totalEurEl) return;
+    
     let totalEUR = 0;
     const preparedData = state.dashboardData.map(item => {
         let valEur = item.price * item.qty;
@@ -98,9 +137,9 @@ function renderDashboardGrid() {
         totalEUR += valEur;
         return { ...item, valEur };
     });
-    const totalUSD = totalEUR * state.eurUsdRate;
 
-    // SORTIERUNG
+    const totalUSD = totalEUR * state.eurUsdRate;
+    
     preparedData.sort((a, b) => {
         let valA, valB;
         if (state.sortField === 'name') {
@@ -108,12 +147,11 @@ function renderDashboardGrid() {
             if (state.sortDirection === 'asc') return valA.localeCompare(valB);
             return valB.localeCompare(valA);
         } else if (state.sortField === 'performance') {
-            // NEU: Performance Sort
             valA = a.changePercent; valB = b.changePercent;
             if (state.sortDirection === 'asc') return valA - valB;
             return valB - valA;
         } else {
-            valA = a.valEur; valB = b.valEur; // Value / Percent = gleicher Betrag
+            valA = a.valEur; valB = b.valEur;
             if (state.sortDirection === 'asc') return valA - valB;
             return valB - valA;
         }
@@ -123,12 +161,16 @@ function renderDashboardGrid() {
     if(totalEurEl) totalEurEl.textContent = formatMoney(totalEUR, 'EUR');
     if(totalUsdEl) totalUsdEl.textContent = formatMoney(totalUSD, 'USD');
     if(totalPosEl) totalPosEl.textContent = state.dashboardData.length;
-    gridEl.innerHTML = preparedData.map(data => createStockCardHTML(data, data.qty, data.url, totalEUR, state.eurUsdRate)).join('');
+    
+    // HIER: Übergabe von BEIDEN URLs an die UI
+    gridEl.innerHTML = preparedData.map(data => 
+        createStockCardHTML(data, data.qty, data.url, data.extraUrl, totalEUR, state.eurUsdRate)
+    ).join('');
+    
     attachDashboardEvents();
 }
 
 function attachDashboardEvents() {
-    // Sort Buttons
     document.querySelectorAll('.sort-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const field = btn.dataset.sort;
@@ -162,6 +204,7 @@ function attachDashboardEvents() {
         });
         input.addEventListener('click', (e) => e.stopPropagation());
     });
+    // URL 1
     document.querySelectorAll('.url-input').forEach(input => {
         input.addEventListener('change', (e) => {
             const sym = e.target.dataset.symbol;
@@ -169,6 +212,18 @@ function attachDashboardEvents() {
             updateUrl(sym, newUrl);
             const item = state.dashboardData.find(d => d.symbol === sym);
             if(item) item.url = newUrl;
+            renderDashboardGrid();
+        });
+        input.addEventListener('click', (e) => e.stopPropagation());
+    });
+    // URL 2 (Extra)
+    document.querySelectorAll('.extra-url-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const sym = e.target.dataset.symbol;
+            const newUrl = e.target.value;
+            updateExtraUrl(sym, newUrl);
+            const item = state.dashboardData.find(d => d.symbol === sym);
+            if(item) item.extraUrl = newUrl;
             renderDashboardGrid();
         });
         input.addEventListener('click', (e) => e.stopPropagation());
@@ -214,6 +269,8 @@ async function loadChartForModal(symbol, requestedRange) {
     try {
         let interval = '1d';
         let apiRange = requestedRange;
+        
+        // SMA BUFFER & INTERVAL
         if (requestedRange === '1mo') { apiRange = '1y'; interval = '1d'; } 
         else if (requestedRange === '6mo') { apiRange = '2y'; interval = '1d'; }
         else if (requestedRange === '1y') { apiRange = '2y'; interval = '1d'; }
@@ -226,12 +283,14 @@ async function loadChartForModal(symbol, requestedRange) {
         if(rawData) {
             const analysis = analyze(rawData);
             renderChart(canvasId, rawData, requestedRange, analysis);
+            
             if(rawData.meta) {
                 if(modalExchange) modalExchange.textContent = rawData.meta.exchangeName || rawData.meta.exchangeTimezoneName || 'N/A';
                 const rawType = rawData.meta.instrumentType || 'EQUITY';
                 if(modalType) modalType.textContent = TYPE_TRANSLATIONS[rawType] || rawType;
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if(modalFullname) modalFullname.textContent = fullName; 
+                
                 if(analysis) {
                     if(modalVol) modalVol.textContent = analysis.volatility ? analysis.volatility.toFixed(1) + '%' : 'n/a';
                     if(modalTrend) {
@@ -297,7 +356,6 @@ function initSearch() {
     });
 }
 
-// ESC Listener
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
 });
@@ -350,13 +408,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(copyUrlsBtn) {
         copyUrlsBtn.addEventListener('click', () => {
             if(!state.dashboardData || state.dashboardData.length === 0) { alert("Keine Daten."); return; }
-            let text = "WICHTIGE LINKS\n\n";
+            let text = "";
             const items = [...state.dashboardData].sort((a,b) => a.symbol.localeCompare(b.symbol));
             let count = 0;
             items.forEach(i => {
                 if(i.url && i.url.trim() !== '') {
-                    const safeName = i.name || i.symbol;
-                    text += `${safeName} (${i.symbol}):\n${i.url}\n\n`;
+                    text += `${i.url}\n`;
+                    count++;
+                }
+                if(i.extraUrl && i.extraUrl.trim() !== '') {
+                    text += `${i.extraUrl}\n`;
                     count++;
                 }
             });
