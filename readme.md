@@ -70,7 +70,7 @@ Da es sich um eine statische Web-App handelt, ist keine Installation nötig.
 │   ├── store.js     # Datenbank (LocalStorage)
 │   ├── ui.js        # HTML-Komponenten (Karten, Listen)
 │   └── theme.js     # Dark/Light Mode Logik
-└── README.md        # Dokumentation
+└── readme.md        # Dokumentation
 ```
 
 ## Disclaimer
