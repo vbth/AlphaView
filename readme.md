@@ -1,7 +1,3 @@
-Hier ist die bereinigte `README.md` ohne Icons/Badges.
-
----
-
 # AlphaView - Professional Portfolio Analytics
 
 AlphaView ist eine moderne, browserbasierte Portfolio-Analyse-App, die komplett ohne Backend oder Build-Prozesse auskommt ("No-Build"). Sie läuft direkt im Browser, speichert Daten lokal im `localStorage` und nutzt die Yahoo Finance API für Echtzeitkurse.
