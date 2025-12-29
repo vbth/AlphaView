@@ -16,7 +16,7 @@ export function updateSortUI(activeField, direction) {
     document.querySelectorAll('.sort-btn').forEach(btn => {
         const icon = btn.querySelector('i');
         const field = btn.dataset.sort;
-        
+
         btn.className = 'sort-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1 border border-slate-200 dark:border-slate-700 shadow-sm';
         icon.className = 'fa-solid fa-sort text-slate-300 ml-1 pointer-events-none';
 
@@ -81,7 +81,24 @@ export function renderAppSkeleton(container) {
 }
 
 export function createStockCardHTML(data, qty, url, extraUrl, totalPortfolioValueEUR, eurUsdRate) {
-    // 1. TYP MAPPING FÜR BADGES
+    const isUp = data.change >= 0;
+    const positionValueNative = data.price * qty;
+    let positionValueEUR = (data.currency === 'USD') ? positionValueNative / eurUsdRate : positionValueNative;
+    const weightPercent = totalPortfolioValueEUR > 0 ? (positionValueEUR / totalPortfolioValueEUR) * 100 : 0;
+
+    return `
+        <div class="stock-card group relative bg-white dark:bg-dark-surface rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-primary/50 dark:hover:border-neon-accent/50 transition-all duration-300 cursor-pointer overflow-hidden" data-symbol="${data.symbol}">
+            <div class="p-5">
+                ${renderCardHeader(data)}
+                ${renderCardInfoBox(data, qty, url, extraUrl, positionValueNative, weightPercent)}
+                ${renderCardFooter(data, isUp)}
+            </div>
+            <div class="h-1 w-full ${isUp ? 'bg-green-500' : 'bg-red-500'}"></div>
+        </div>
+    `;
+}
+
+function renderCardHeader(data) {
     const typeStyles = {
         'EQUITY': { label: 'AKTIE', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 border-blue-200 dark:border-blue-800' },
         'ETF': { label: 'ETF', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 border-purple-200 dark:border-purple-800' },
@@ -90,104 +107,97 @@ export function createStockCardHTML(data, qty, url, extraUrl, totalPortfolioValu
         'INDEX': { label: 'INDEX', color: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600' }
     };
     const tStyle = typeStyles[data.type] || { label: data.type || 'OTHER', color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' };
+    const colorClass = data.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 
-    const isUp = data.change >= 0;
-    const colorClass = isUp ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-    const trendIcon = data.trend === 'bullish' ? 'fa-arrow-trend-up' : (data.trend === 'bearish' ? 'fa-arrow-trend-down' : 'fa-minus');
-    const positionValueNative = data.price * qty;
-    let positionValueEUR = positionValueNative;
-    if (data.currency === 'USD') positionValueEUR = positionValueNative / eurUsdRate;
-    const weightPercent = totalPortfolioValueEUR > 0 ? (positionValueEUR / totalPortfolioValueEUR) * 100 : 0;
-    const safeUrl = url || '';
-    const safeExtraUrl = extraUrl || '';
-
-    let extraIcon = 'fa-newspaper'; 
-    let extraPlaceholder = 'News-Link...';
-    if (data.type === 'ETF' || data.type === 'MUTUALFUND') {
-        extraIcon = 'fa-list-check'; 
-        extraPlaceholder = 'Holdings-Link...';
-    }
+    // MarketWatch Link für AI/Manual Research
+    const safeSymbol = data.symbol.split('.')[0].toLowerCase();
+    const mwUrl = (data.type === 'ETF' || data.type === 'MUTUALFUND')
+        ? `https://www.marketwatch.com/investing/fund/${safeSymbol}`
+        : `https://www.marketwatch.com/investing/stock/${safeSymbol}`;
 
     return `
-        <div class="stock-card group relative bg-white dark:bg-dark-surface rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-primary/50 dark:hover:border-neon-accent/50 transition-all duration-300 cursor-pointer overflow-hidden" data-symbol="${data.symbol}">
-            <div class="p-5">
-                <div class="flex justify-between items-start mb-4 gap-4">
-                    <div class="flex-grow min-w-0 pr-2"> 
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate" title="${data.name}">${data.name}</h3>
-                        
-                        <!-- 2. NEUER HEADER MIT BADGE, OHNE WÄHRUNG -->
-                        <div class="flex items-center gap-2 text-xs font-mono text-slate-500 mt-1">
-                            <span class="${tStyle.color} px-1.5 py-0.5 rounded border text-[10px] font-bold tracking-wide">${tStyle.label}</span>
-                            <span class="font-bold text-slate-700 dark:text-slate-300 ml-1">${data.symbol}</span>
-                        </div>
-                    </div>
-                    <div class="text-right whitespace-nowrap pt-1 ml-auto">
-                        <div class="text-xl font-bold font-mono text-slate-900 dark:text-slate-100">${formatMoney(data.price, data.currency)}</div>
-                        <div class="text-sm font-medium font-mono ${colorClass}">${formatPercent(data.changePercent)}</div>
-                    </div>
-                </div>
-
-                <!-- INFO-BOX -->
-                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 mb-4 border border-slate-100 dark:border-slate-700" onclick="event.stopPropagation()">
-                    
-                    <!-- ZEILE 1: Kurswert (vorher Prozent) -->
-                    <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2 mb-2">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-coins text-slate-400 text-xs"></i>
-                            <label class="text-xs text-slate-500">Kurswert</label>
-                        </div>
-                        <div class="font-mono font-bold text-slate-900 dark:text-white text-right">
-                            ${formatMoney(positionValueNative, data.currency)}
-                        </div>
-                    </div>
-
-                    <!-- ZEILE 2: Stückzahl + Prozent Badge -->
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-layer-group text-slate-400 text-xs"></i>
-                            <!-- Textfarbe angepasst an URL-Style (slate-600/slate-400) -->
-                            <label class="text-xs text-slate-600 dark:text-slate-400">Stückzahl</label>
-                            
-                            <!-- Prozent Badge direkt hinter Stückzahl -->
-                            <span class="ml-1 text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono">
-                                ${weightPercent.toFixed(2).replace('.', ',')}%
-                            </span>
-                        </div>
-                        <input type="number" min="0" step="any" class="qty-input w-24 text-right text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 focus:ring-2 focus:ring-primary outline-none" value="${qty}" data-symbol="${data.symbol}" placeholder="0">
-                    </div>
-
-                    <!-- ZEILE 3: Info Link -->
-                    <div class="flex items-center gap-2 pt-1">
-                        <i class="fa-solid fa-link text-slate-400 text-xs"></i>
-                        <input type="text" class="url-input w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${safeUrl}" data-symbol="${data.symbol}" placeholder="Info-Link">
-                        ${safeUrl ? `<a href="${safeUrl}" target="_blank" class="text-primary hover:text-blue-600" title="Öffnen"><i class="fa-solid fa-external-link-alt text-xs"></i></a>` : ''}
-                    </div>
-
-                    <!-- ZEILE 4: Extra Link -->
-                    <div class="flex items-center gap-2 pt-1 mt-1 border-t border-slate-200 dark:border-slate-700">
-                        <i class="fa-solid ${extraIcon} text-slate-400 text-xs w-4 text-center"></i>
-                        <input type="text" class="extra-url-input w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${safeExtraUrl}" data-symbol="${data.symbol}" placeholder="${extraPlaceholder}">
-                        ${safeExtraUrl ? `<a href="${safeExtraUrl}" target="_blank" class="text-primary hover:text-blue-600" title="Details"><i class="fa-solid fa-external-link-alt text-xs"></i></a>` : ''}
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-4 border-t border-slate-50 dark:border-slate-800 pt-3">
-                    <div class="flex items-center gap-2">
-                        <div class="flex items-center gap-1"><i class="fa-solid ${trendIcon}"></i> ${data.trend}</div>
-                        <span class="text-slate-300 dark:text-slate-600">•</span>
-                        <div>Volatilität ${data.volatility.toFixed(1)}%</div>
-                    </div>
-                    <button class="delete-btn text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1.5 px-2 py-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded" data-symbol="${data.symbol}" title="Entfernen">
-                        <i class="fa-solid fa-trash-can"></i> Entfernen
-                    </button>
+        <div class="flex justify-between items-start mb-4 gap-4">
+            <div class="flex-grow min-w-0 pr-2"> 
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate" title="${data.name}">${data.name}</h3>
+                <div class="flex items-center gap-2 text-xs font-mono text-slate-500 mt-1">
+                    <span class="${tStyle.color} px-1.5 py-0.5 rounded border text-[10px] font-bold tracking-wide">${tStyle.label}</span>
+                    <span class="font-bold text-slate-700 dark:text-slate-300 ml-1">${data.symbol}</span>
+                    <a href="${mwUrl}" target="_blank" class="ml-1 text-slate-400 hover:text-primary transition-colors" title="MarketWatch Research">
+                        <i class="fa-solid fa-microchip text-[10px]"></i>
+                    </a>
                 </div>
             </div>
-            <div class="h-1 w-full ${isUp ? 'bg-green-500' : 'bg-red-500'}"></div>
+            <div class="text-right whitespace-nowrap pt-1 ml-auto">
+                <div class="text-xl font-bold font-mono text-slate-900 dark:text-slate-100">${formatMoney(data.price, data.currency)}</div>
+                <div class="text-sm font-medium font-mono ${colorClass}">${formatPercent(data.changePercent)}</div>
+            </div>
         </div>
     `;
 }
 
-const TYPE_BADGES = { 'EQUITY': {label:'AKTIE',color:'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}, 'ETF': {label:'ETF',color:'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}, 'MUTUALFUND': {label:'FONDS',color:'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'}, 'CRYPTOCURRENCY': {label:'KRYPTO',color:'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}, 'INDEX': {label:'INDEX',color:'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200'} };
+function renderCardInfoBox(data, qty, url, extraUrl, positionValueNative, weightPercent) {
+    let extraIcon = 'fa-newspaper';
+    let extraPlaceholder = 'News-Link...';
+    if (data.type === 'ETF' || data.type === 'MUTUALFUND') {
+        extraIcon = 'fa-list-check';
+        extraPlaceholder = 'Holdings-Link...';
+    }
+
+    return `
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 mb-4 border border-slate-100 dark:border-slate-700" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2 mb-2">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-coins text-slate-400 text-xs"></i>
+                    <label class="text-xs text-slate-500">Kurswert</label>
+                </div>
+                <div class="font-mono font-bold text-slate-900 dark:text-white text-right">
+                    ${formatMoney(positionValueNative, data.currency)}
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-slate-400 text-xs"></i>
+                    <label class="text-xs text-slate-600 dark:text-slate-400">Stückzahl</label>
+                    <span class="ml-1 text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono">
+                        ${weightPercent.toFixed(2).replace('.', ',')}%
+                    </span>
+                </div>
+                <input type="number" min="0" step="any" class="qty-input dashboard-action w-24 text-right text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 focus:ring-2 focus:ring-primary outline-none" value="${qty}" data-symbol="${data.symbol}" data-action="qty" placeholder="0">
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+                <i class="fa-solid fa-link text-slate-400 text-xs"></i>
+                <input type="text" class="url-input dashboard-action w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${url || ''}" data-symbol="${data.symbol}" data-action="url" placeholder="Info-Link">
+                ${url ? `<a href="${url}" target="_blank" class="text-primary hover:text-blue-600" title="Öffnen"><i class="fa-solid fa-external-link-alt text-xs"></i></a>` : ''}
+            </div>
+
+            <div class="flex items-center gap-2 pt-1 mt-1 border-t border-slate-200 dark:border-slate-700">
+                <i class="fa-solid ${extraIcon} text-slate-400 text-xs w-4 text-center"></i>
+                <input type="text" class="extra-url-input dashboard-action w-full text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-400 placeholder-slate-400" value="${extraUrl || ''}" data-symbol="${data.symbol}" data-action="extraUrl" placeholder="${extraPlaceholder}">
+                ${extraUrl ? `<a href="${extraUrl}" target="_blank" class="text-primary hover:text-blue-600" title="Details"><i class="fa-solid fa-external-link-alt text-xs"></i></a>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function renderCardFooter(data, isUp) {
+    const trendIcon = data.trend === 'bullish' ? 'fa-arrow-trend-up' : (data.trend === 'bearish' ? 'fa-arrow-trend-down' : 'fa-minus');
+    return `
+        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-4 border-t border-slate-50 dark:border-slate-800 pt-3">
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1"><i class="fa-solid ${trendIcon}"></i> ${data.trend}</div>
+                <span class="text-slate-300 dark:text-slate-600">•</span>
+                <div>Volatilität ${data.volatility.toFixed(1)}%</div>
+            </div>
+            <button class="delete-btn dashboard-action text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1.5 px-2 py-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded" data-symbol="${data.symbol}" data-action="delete" title="Entfernen">
+                <i class="fa-solid fa-trash-can"></i> Entfernen
+            </button>
+        </div>
+    `;
+}
+
+const TYPE_BADGES = { 'EQUITY': { label: 'AKTIE', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' }, 'ETF': { label: 'ETF', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' }, 'MUTUALFUND': { label: 'FONDS', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' }, 'CRYPTOCURRENCY': { label: 'KRYPTO', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' }, 'INDEX': { label: 'INDEX', color: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200' } };
 
 export function renderSearchResults(results, container) {
     if (results.length === 0) {

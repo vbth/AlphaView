@@ -27,17 +27,17 @@ async function fetchViaProxy(targetUrl) {
             clearTimeout(timeoutId);
 
             if (!response.ok) throw new Error(`Status ${response.status}`);
-            
+
             const text = await response.text();
-            if(!text || text.trim().length === 0) throw new Error("Leere Antwort");
-            
+            if (!text || text.trim().length === 0) throw new Error("Leere Antwort");
+
             try {
                 return JSON.parse(text);
-            } catch(e) {
+            } catch (e) {
                 throw new Error("Kein JSON");
             }
         } catch (error) {
-            lastError = error; 
+            lastError = error;
         }
     }
     throw lastError || new Error('Alle Proxies fehlgeschlagen');
@@ -47,20 +47,33 @@ async function fetchViaProxy(targetUrl) {
  * Holt Chart-Daten mit aggressiverem Fallback für Fonds.
  */
 export async function fetchChartData(symbol, range = '1y', interval = '1d') {
+    const cacheKey = `alphaview_cache_${symbol}_${range}_${interval}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+        const { timestamp, data } = JSON.parse(cached);
+        if (Date.now() - timestamp < 5 * 60 * 1000) { // 5 Min TTL
+            return data;
+        }
+    }
+
     try {
-        // 1. Versuch: Exakt was angefordert wurde (z.B. 1d/5m)
-        return await tryFetch(symbol, range, interval);
+        const data = await tryFetch(symbol, range, interval);
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+            timestamp: Date.now(),
+            data: data
+        }));
+        return data;
     } catch (error) {
         // Wenn kein Intraday (1d, 5d) möglich ist -> Fallback
         if (interval !== '1d' && interval !== '1wk' && interval !== '1mo') {
             try {
                 // 2. Fallback: 5 Tage Daily (Standard-Fallback)
-                return await tryFetch(symbol, '5d', '1d'); 
+                return await tryFetch(symbol, '5d', '1d');
             } catch (fallbackError) {
                 try {
                     // 3. Notfall-Fallback: 1 Monat Daily (Fonds haben oft Datenlücken)
                     return await tryFetch(symbol, '1mo', '1d');
-                } catch(finalErr) {
+                } catch (finalErr) {
                     console.error(`Alle Versuche gescheitert für ${symbol}`);
                     return null;
                 }
@@ -86,7 +99,7 @@ export async function searchSymbol(query) {
         const targetUrl = `${BASE_URL_SEARCH}?q=${query}&quotesCount=10&newsCount=0`;
         const data = await fetchViaProxy(targetUrl);
         if (!data.quotes) return [];
-        
+
         return data.quotes
             .filter(q => q.isYahooFinance) // Filter gelockert, um mehr Fonds zu finden
             .map(q => ({
