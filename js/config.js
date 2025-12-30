@@ -1,8 +1,8 @@
 /**
- * Configuration Module
- * Centralizes constants, types, and badge styles.
+ * Modul: Konfiguration
+ * ====================
+ * Zentralisiert Konstanten, Anlagetypen und Badge-Styles.
  */
-
 export const ASSET_TYPES = {
     'EQUITY': {
         label: 'AKTIE',
@@ -46,5 +46,5 @@ export const DEFAULT_ASSET_STYLE = {
 export const API_CONSTANTS = {
     DEFAULT_RANGE: '1y',
     DEFAULT_INTERVAL: '1d',
-    CACHE_TTL_MS: 5 * 60 * 1000 // 5 Minutes
+    CACHE_TTL_MS: 5 * 60 * 1000 // 5 Minuten
 };

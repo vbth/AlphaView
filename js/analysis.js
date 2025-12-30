@@ -1,8 +1,8 @@
 /**
- * Analysis Module
- * ===============
- * Berechnet Metriken wie Performance, Trend und Volatilität.
- * Bereitet die Rohdaten für die Anzeige auf.
+ * Modul: Analyse
+ * ==============
+ * Berechnet finanzielle Metriken wie Performance, Trend und Volatilität.
+ * Transformiert Rohdaten für die UI-Darstellung.
  */
 
 export function analyze(chartResult) {

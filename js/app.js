@@ -1,6 +1,8 @@
 /**
- * App Module
- * Main Controller
+ * Modul: App
+ * ==========
+ * Haupt-Controller der Anwendung. 
+ * Verknüpft State, UI, API und Events.
  */
 import { initTheme, toggleTheme } from './theme.js';
 import { fetchChartData, searchSymbol } from './api.js';
@@ -33,7 +35,7 @@ const modalVol = document.getElementById('modal-vol');
 const closeModalBtns = [document.getElementById('close-modal'), document.getElementById('close-modal-btn')];
 const rangeBtns = document.querySelectorAll('.chart-range-btn');
 
-// --- LIFECYCLE & CORE ---
+// --- LEBENSZYKLUS & KERNLOGIK ---
 
 async function loadDashboard() {
     const watchlist = getWatchlist();
@@ -125,14 +127,14 @@ async function fetchPortfolioData(watchlist, dashboardRange) {
             if (currentRate) state.eurUsdRate = currentRate;
         }
 
-        return stockResults; // Return all, including errors
+        return stockResults; // Gibt alle Ergebnisse zurück, auch Fehlerobjekte
     } catch (e) {
         console.error("Fetch Data Error:", e);
         return [];
     }
 }
 
-// --- RENDERING ---
+// --- UI-RENDERING ---
 
 function renderDashboardGrid() {
     const gridEl = document.getElementById('dashboard-grid');
@@ -143,7 +145,7 @@ function renderDashboardGrid() {
 
     let totalEUR = 0;
     const preparedData = state.dashboardData.map(item => {
-        if (item.error) return item; // Skip calc for errors
+        if (item.error) return item; // Überspringe Berechnung bei Fehlern
 
         let valEur = item.price * item.qty;
         if (item.currency === 'USD') valEur /= state.eurUsdRate;
@@ -154,7 +156,7 @@ function renderDashboardGrid() {
     const totalUSD = totalEUR * state.eurUsdRate;
 
     preparedData.sort((a, b) => {
-        // Errors at the bottom
+        // Fehlerhafte Einträge nach unten sortieren
         if (a.error && !b.error) return 1;
         if (!a.error && b.error) return -1;
         if (a.error && b.error) return 0;
@@ -195,7 +197,7 @@ function initDashboardEvents() {
     gridEl.addEventListener('click', (e) => {
         const target = e.target;
 
-        // Delete Button
+        // Löschen-Button
         const deleteBtn = target.closest('[data-action="delete"]');
         if (deleteBtn) {
             e.stopPropagation();
@@ -214,7 +216,7 @@ function initDashboardEvents() {
         }
     });
 
-    // Change-Events (Inputs)
+    // Änderungs-Events (Eingabefelder)
     gridEl.addEventListener('change', (e) => {
         const target = e.target;
         const action = target.dataset.action;
@@ -332,7 +334,7 @@ rangeBtns.forEach(btn => {
     });
 });
 
-// --- SEARCH ---
+// --- SUCHE ---
 
 function initSearch() {
     const input = document.getElementById('header-search-input');
@@ -387,7 +389,7 @@ function initSearch() {
     });
 }
 
-// --- DATA MANAGEMENT & EXPORTS ---
+// --- DATEN-MANAGEMENT & EXPORTE ---
 
 function initDataManagement() {
     const exportBtn = document.getElementById('export-btn');
@@ -523,7 +525,7 @@ function initSorting() {
     });
 }
 
-// --- BOOTSTRAP ---
+// --- INITIALISIERUNG ---
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 

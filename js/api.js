@@ -1,10 +1,11 @@
 /**
- * API Module
+ * Modul: API
  * ==========
- * Datenabruf mit mehrstufigem Fallback für Fonds.
+ * Verwaltet Datenabrufe von Yahoo Finance über verschiedene Proxies.
+ * Implementiert Fallback-Strategien für maximale Zuverlässigkeit bei Fonds/ETFs.
  */
 
-// Mehr Proxies für höhere Zuverlässigkeit
+// Liste von CORS-Proxies für höhere Ausfallsicherheit
 const PROXIES = [
     'https://corsproxy.io/?',
     'https://api.allorigins.win/raw?url=',
@@ -44,7 +45,17 @@ async function fetchViaProxy(targetUrl) {
 }
 
 /**
- * Holt Chart-Daten mit aggressiverem Fallback für Fonds.
+ * Ruft Chart-Daten ab (mit Caching und Fallback-Strategie).
+ * 
+ * Strategie:
+ * 1. Prüfe Session-Cache (TTL: 5 Min)
+ * 2. Versuch: Angefragter Zeitraum & Intervall
+ * 3. Fallback (wenn Intraday fehlschlägt): 5 Tage Daily
+ * 4. Notfall-Fallback (oft nötig für Fonds): 1 Monat Daily
+ * 
+ * @param {string} symbol - Das Tickersymbol (z.B. "AAPL", "btc-usd")
+ * @param {string} range - Zeitraum (1d, 5d, 1mo, 1y, etc.)
+ * @param {string} interval - Datenintervall (5m, 15m, 1d, 1wk)
  */
 export async function fetchChartData(symbol, range = '1y', interval = '1d') {
     const cacheKey = `alphaview_cache_${symbol}_${range}_${interval}`;

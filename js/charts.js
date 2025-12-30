@@ -1,7 +1,8 @@
 /**
- * Charts Module
+ * Modul: Charts
+ * =============
  * Engine: TradingView Lightweight Charts
- * Fix: Smart Zoom (setVisibleRange) so lines are long but view is correct.
+ * Implementiert "Smart Zoom": Lädt Historie für SMAs, zeigt aber initial nur den gewünschten Zeitraum.
  */
 
 let chart = null;
@@ -91,7 +92,7 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
         return;
     }
 
-    // --- SMART ZOOM LOGIC ---
+    // --- SMART ZOOM LOGIK ---
     // Wir berechnen den sichtbaren Bereich basierend auf 'range', 
     // obwohl wir möglicherweise viel mehr Daten geladen haben (für SMA).
     const nowSec = Math.floor(Date.now() / 1000);
@@ -103,7 +104,7 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
     else if (range === '5y') visibleStartTime = nowSec - (5 * 365 * 24 * 3600);
     // Bei 1d, 1W, Max lassen wir alles anzeigen
 
-    // Suche den Index für Startzeit (für Text/Perf Update)
+    // Suche den Index für Startzeit (für Text/Performance Update)
     let visibleStartIndex = 0;
     if (visibleStartTime > 0) {
         visibleStartIndex = cleanData.findIndex(d => d.time >= visibleStartTime);
@@ -113,7 +114,7 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
     updateRangeInfo(cleanData[visibleStartIndex].time, cleanData[cleanData.length - 1].time, range);
     updatePerformance(cleanData[visibleStartIndex].value, cleanData[cleanData.length - 1].value);
 
-    // Chart Init
+    // Chart Initialisierung
     if (chart) { try { chart.remove(); } catch (e) { } chart = null; }
     container.innerHTML = '';
     container.style.position = 'relative';
@@ -123,7 +124,7 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
     const textColor = isDark ? '#94a3b8' : '#64748b';
 
-    // Trend Color based on VISIBLE range
+    // Trend-Farbe basierend auf dem SICHTBAREN Bereich
     const startPrice = cleanData[visibleStartIndex].value;
     const endPrice = cleanData[cleanData.length - 1].value;
     const isBullish = endPrice >= startPrice;
@@ -132,7 +133,7 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
     const topColor = isBullish ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)';
     const bottomColor = isBullish ? 'rgba(34, 197, 94, 0.0)' : 'rgba(239, 68, 68, 0.0)';
 
-    // Tooltip
+    // Tooltip Konfiguration
     const toolTip = document.createElement('div');
     toolTip.style = `position: absolute; display: none; padding: 8px; box-sizing: border-box; font-size: 12px; text-align: left; z-index: 1000; top: 12px; left: 12px; pointer-events: none; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-family: 'Inter', sans-serif;`;
     toolTip.style.background = isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.95)';
@@ -160,7 +161,7 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
 
         const isIntraday = (range === '1d' || range === '1W' || range === '5d');
         if (!isIntraday) {
-            // Draw SMAs (based on FULL history)
+            // Zeichne SMAs (basierend auf der VOLLEN Historie)
             if (cleanData.length > 50) {
                 sma50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
                 sma50Series.setData(calculateSMA_Data(cleanData, 50));
@@ -185,7 +186,7 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
         if (!isIntraday && cleanData.length > 200) addLegendItem('Ø 200', '#f59e0b');
         container.appendChild(legendContainer);
 
-        // Events
+        // Crosshair Events
         chart.subscribeCrosshairMove(param => {
             if (param.point === undefined || !param.time || param.point.x < 0 || param.point.x > container.clientWidth || param.point.y < 0 || param.point.y > container.clientHeight) {
                 toolTip.style.display = 'none';
@@ -217,7 +218,7 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
         });
         resizeObserver.observe(container);
 
-        // ZOOM LOGIC: Set visible range to what user asked for (e.g. 1 Year), but keep history for SMA
+        // ZOOM LOGIK: Setze sichtbaren Bereich auf Auswahl (z.B. 1 Jahr), aber behalte sma-History
         if (visibleStartTime > 0) {
             chart.timeScale().setVisibleRange({ from: visibleStartTime, to: nowSec });
         } else {

@@ -1,6 +1,7 @@
 /**
- * UI Module
- * Final Layout: Unified Toolbar (Wrap), Search removed from Body.
+ * Modul: UI
+ * =========
+ * Verwaltet HTML-Rendering, Formatierung und UI-Updates.
  */
 import { ASSET_TYPES, DEFAULT_ASSET_STYLE } from './config.js';
 
@@ -32,7 +33,7 @@ export function updateSortUI(activeField, direction) {
 
 export function renderAppSkeleton(container) {
     container.innerHTML = `
-        <!-- HEADER STATS -->
+        <!-- HEADER STATISTIKEN -->
         <div id="portfolio-summary" class="hidden mb-8 bg-white dark:bg-dark-surface rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h2 class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Gesamtdepotwert</h2>
@@ -47,11 +48,11 @@ export function renderAppSkeleton(container) {
             </div>
         </div>
 
-        <!-- UNIFIED TOOLBAR (Wrap on Mobile) -->
+        <!-- TOOLBAR (Mobil-Optimiert) -->
         <div class="mb-8 flex justify-center">
             <div class="flex flex-wrap justify-center bg-white dark:bg-dark-surface p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm gap-1" id="dashboard-range-controls">
                 
-                <!-- TIME -->
+                <!-- ZEITRAUM -->
                 <button data-range="1d" class="dash-range-btn px-3 py-1.5 text-xs font-bold rounded-md bg-slate-100 dark:bg-slate-600 text-primary dark:text-white transition-all">1T</button>
                 <button data-range="1W" class="dash-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">1W</button>
                 <button data-range="1mo" class="dash-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">1M</button>
@@ -60,11 +61,11 @@ export function renderAppSkeleton(container) {
                 <button data-range="5y" class="dash-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">5J</button>
                 <button data-range="max" class="dash-range-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">MAX</button>
 
-                <!-- DIVIDER -->
+                <!-- TRENNER -->
                 <div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
                 <div class="w-full h-px bg-slate-200 dark:bg-slate-700 my-1 md:hidden"></div> <!-- Mobile Divider -->
 
-                <!-- SORT -->
+                <!-- SORTIERUNG -->
                 <button class="sort-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1" data-sort="name">Name <i class="fa-solid fa-sort text-slate-300 ml-1 pointer-events-none"></i></button>
                 <button class="sort-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1" data-sort="value">Wert <i class="fa-solid fa-sort text-slate-300 ml-1 pointer-events-none"></i></button>
                 <button class="sort-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1" data-sort="percent">Anteil <i class="fa-solid fa-sort text-slate-300 ml-1 pointer-events-none"></i></button>
@@ -102,7 +103,7 @@ export function createStockCardHTML(data, qty, url, extraUrl, totalPortfolioValu
 
 function renderCardHeader(data) {
     const rawStyle = ASSET_TYPES[data.type] || DEFAULT_ASSET_STYLE;
-    // Allow fallback if label/color missing
+    // Fallback falls Label/Farbe fehlt
     const tStyle = {
         label: rawStyle.label || data.type || 'OTHER',
         color: rawStyle.color || DEFAULT_ASSET_STYLE.color
@@ -110,7 +111,7 @@ function renderCardHeader(data) {
 
     const colorClass = data.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 
-    // MarketWatch Link für AI/Manual Research
+    // MarketWatch Link für Recherche
     const safeSymbol = data.symbol.split('.')[0].toLowerCase();
     const mwUrl = (data.type === 'ETF' || data.type === 'MUTUALFUND')
         ? `https://www.marketwatch.com/investing/fund/${safeSymbol}`

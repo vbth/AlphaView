@@ -1,7 +1,8 @@
 /**
- * Store Module
- * Manages Portfolio in LocalStorage.
- * Final Version: Full Exports
+ * Modul: Store (LocalStorage)
+ * ===========================
+ * Verwaltet das Portfolio und die Watchlist im Browser-Speicher.
+ * Schlüssel: 'alphaview_portfolio'
  */
 const STORAGE_KEY = 'alphaview_portfolio';
 

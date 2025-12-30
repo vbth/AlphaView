@@ -1,17 +1,17 @@
 /**
- * Theme Module
+ * Modul: Theme
  * ============
- * Verwaltet den Light/Dark Mode der Anwendung.
+ * Verwaltet den Hell/Dunkel-Modus.
  * - Speichert Präferenz im LocalStorage.
- * - Prüft System-Einstellungen (prefers-color-scheme).
+ * - Berücksichtigt Systemeinstellungen (prefers-color-scheme).
  */
 
-// Initialisiert das Theme beim Start
+// Initialisiert das Theme beim Start (Laden aus Storage oder System)
 export function initTheme() {
     const savedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    // Wenn 'dark' gespeichert ist ODER keine Speicherung vorliegt und System dunkel ist
+    // Wenn 'dark' gespeichert ist, oder keine Präferenz vorliegt aber das System 'dark' ist
     if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
         document.documentElement.classList.add('dark');
         return 'dark';
@@ -21,7 +21,7 @@ export function initTheme() {
     }
 }
 
-// Schaltet zwischen Hell und Dunkel um
+// Schaltet zwischen Hell- und Dunkelmodus um
 export function toggleTheme() {
     const html = document.documentElement;
     if (html.classList.contains('dark')) {
