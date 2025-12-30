@@ -11,11 +11,25 @@ let sma50Series = null;
 let sma200Series = null;
 let currentCurrency = 'USD';
 
+/**
+ * Formatiert eine Zahl als Währungsstring.
+ * Verwendet 'de-DE' für EUR und 'en-US' für alles andere (primär USD).
+ * @param {number} val - Der zu formatierende Wert.
+ * @param {string} currency - Der ISO-Währungscode (z.B. 'EUR', 'USD').
+ * @returns {string} Der formatierte String (z.B. "1.234,56 €").
+ */
 const formatCurrencyValue = (val, currency) => {
     const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
     return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
 };
 
+/**
+ * Berechnet SMA-Datenpunkte für die Darstellung im Chart.
+ * Erzeugt ein Array von Objekten { time, value } kompatibel mit Lightweight Charts.
+ * @param {Array} sortedData - Die sortierten Chart-Daten { time, value }.
+ * @param {number} window - Das SMA-Fenster (z.B. 50, 200).
+ * @returns {Array} Die Datenreihe für den Chart.
+ */
 function calculateSMA_Data(sortedData, window) {
     let result = [];
     for (let i = 0; i < sortedData.length; i++) {
@@ -27,6 +41,13 @@ function calculateSMA_Data(sortedData, window) {
     return result;
 }
 
+/**
+ * Aktualisiert die Anzeige des angezeigten Zeitraums im Chart-Modal.
+ * Formatiert Start- und Enddatum basierend auf der gewählten Range (Daily, Weekly, etc.).
+ * @param {number} startTs - Unix-Timestamp des Startdatums.
+ * @param {number} endTs - Unix-Timestamp des Enddatums.
+ * @param {string} range - Der gewählte Zeitraum-Code (z.B. '1mo').
+ */
 function updateRangeInfo(startTs, endTs, range) {
     const el = document.getElementById('dynamic-range-text');
     if (!el) return;
@@ -51,6 +72,12 @@ function updateRangeInfo(startTs, endTs, range) {
     } catch (err) { console.error(err); }
 }
 
+/**
+ * Berechnet und zeigt die Performance (in %) für den aktuell sichtbaren Chart-Ausschnitt an.
+ * Färbt das Ergebnis grün (positiv) oder rot (negativ).
+ * @param {number} startVal - Wert am Anfang des sichtbaren Bereichs.
+ * @param {number} endVal - Wert am Ende des sichtbaren Bereichs.
+ */
 function updatePerformance(startVal, endVal) {
     const el = document.getElementById('chart-performance');
     if (!el || !startVal) return;
@@ -61,6 +88,19 @@ function updatePerformance(startVal, endVal) {
     el.innerHTML = `<span class="${colorClass}">${sign}${pct.toFixed(2).replace('.', ',')}%</span>`;
 }
 
+/**
+ * Hauptfunktion zum Rendern des Charts mittels TradingView Lightweight Charts.
+ * - Initialisiert oder aktualisiert den Chart im Container.
+ * - Verarbeitet Rohdaten zu Chart-kompatiblen Daten.
+ * - Berechnet und zeichnet SMAs (bei nicht-Intraday Ranges).
+ * - Handhabt Responsive Resizing.
+ * - Implementiert "Smart Zoom" (zeigt nur relevanten Ausschnitt).
+ * 
+ * @param {string} containerId - Die ID des HTML-Containers.
+ * @param {Object} rawData - Die API-Rohdaten.
+ * @param {string} range - Der angeforderte Zeitraum (für Zoom-Logik).
+ * @param {Object} analysisData - Zusätzliche Analysedaten (optional).
+ */
 export function renderChart(containerId, rawData, range = '1y', analysisData = null) {
     const container = document.getElementById(containerId);
     if (!container) return;

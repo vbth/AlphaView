@@ -15,6 +15,15 @@ const PROXIES = [
 const BASE_URL_V8 = 'https://query1.finance.yahoo.com/v8/finance/chart';
 const BASE_URL_SEARCH = 'https://query1.finance.yahoo.com/v1/finance/search';
 
+/**
+ * Führt einen HTTP-Request über eine Liste von Proxies aus.
+ * Versucht sequenziell, die URL über jeden definierten Proxy abzurufen,
+ * bis ein erfolgreicher Request (Status 200 + gültiges JSON) erfolgt.
+ * Beinhaltet einen Timeout-Mechanismus für langsame Antworten.
+ * @param {string} targetUrl - Die abzurufende Ziel-URL.
+ * @returns {Promise<Object>} Das geparste JSON-Ergebnis des Requests.
+ * @throws {Error} Wenn alle Proxies fehlschlagen.
+ */
 async function fetchViaProxy(targetUrl) {
     let lastError = null;
     for (const proxyBase of PROXIES) {
@@ -94,6 +103,15 @@ export async function fetchChartData(symbol, range = '1y', interval = '1d') {
     }
 }
 
+/**
+ * Hilfsfunktion für den eigentlichen Chart-Daten-Abruf.
+ * Konstruiert die Yahoo Finance URL und führt den Abruf über Proxies durch.
+ * Prüft anschließend die Integrität der empfangenen Datenstruktur.
+ * @param {string} symbol - Das Tickersymbol.
+ * @param {string} range - Der Zeitraum.
+ * @param {string} interval - Das Intervall.
+ * @returns {Promise<Object>} Das 'result'-Objekt der Yahoo Chart API.
+ */
 async function tryFetch(symbol, range, interval) {
     const targetUrl = `${BASE_URL_V8}/${symbol}?interval=${interval}&range=${range}`;
     const data = await fetchViaProxy(targetUrl);
@@ -104,6 +122,13 @@ async function tryFetch(symbol, range, interval) {
     return data.chart.result[0];
 }
 
+/**
+ * Sucht nach Wertpapieren über die Yahoo Finance Auto-Complete API.
+ * Wird für die Suchleiste im Header verwendet.
+ * Filtert Ergebnisse, um relevantere Treffer (Aktien, ETFs, Fonds) zu bevorzugen.
+ * @param {string} query - Der Suchbegriff.
+ * @returns {Promise<Array>} Eine Liste von gefundenen Wertpapieren (Symbol, Name, Typ).
+ */
 export async function searchSymbol(query) {
     if (!query || query.length < 1) return [];
     try {

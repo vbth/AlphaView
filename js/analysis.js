@@ -5,6 +5,15 @@
  * Transformiert Rohdaten für die UI-Darstellung.
  */
 
+/**
+ * Führt eine technische Analyse auf Basis der abgerufenen Chart-Daten durch.
+ * Extrahiert Preise, berechnet Performance, gleitende Durchschnitte (SMA 50/200),
+ * Trend-Signal und Volatilität.
+ * Kombiniert diese Metriken mit Metadaten (Name, Währung) für die UI.
+ * 
+ * @param {Object} chartResult - Das Rohdaten-Objekt der Yahoo API.
+ * @returns {Object|null} Das Analyse-Ergebnis-Objekt oder null bei fehlenden Daten.
+ */
 export function analyze(chartResult) {
     const prices = extractPrices(chartResult);
     const meta = chartResult.meta;
@@ -62,6 +71,12 @@ export function analyze(chartResult) {
 }
 
 // Extrahiert reine Preisdaten aus dem Yahoo-Objekt
+/**
+ * Extrahiert die Schlusskurse (oder Adjusted Close) aus der komplexen Yahoo-Response-Struktur.
+ * Filtert ungültige Werte (null/undefined) heraus.
+ * @param {Object} chartResult - Das Rohdaten-Objekt.
+ * @returns {Array<number>} Ein Array von Preiswerten.
+ */
 function extractPrices(chartResult) {
     const adjClose = chartResult.indicators.adjclose?.[0]?.adjclose;
     const close = chartResult.indicators.quote[0].close;
@@ -71,6 +86,14 @@ function extractPrices(chartResult) {
 }
 
 // Berechnet einfachen Durchschnitt
+/**
+ * Berechnet den Simple Moving Average (SMA).
+ * Nimmt den Durchschnitt der letzten 'window' Preise.
+ * Gibt null zurück, wenn nicht genügend Datenpunkte vorhanden sind.
+ * @param {Array<number>} data - Die Preisdaten.
+ * @param {number} window - Das Zeitfenster (z.B. 50 oder 200).
+ * @returns {number|null} Der aktuelle SMA-Wert oder null.
+ */
 function calculateSMA(data, window) {
     if (data.length < window) return null;
     // Nimmt nur die letzten 'window' Tage für den aktuellen Wert
@@ -78,6 +101,12 @@ function calculateSMA(data, window) {
 }
 
 // Berechnet tägliche logarithmische Renditen (für Volatilität)
+/**
+ * Berechnet die stetigen Renditen (Log Returns) aus einer Preisreihe.
+ * Wird als Basis für die Volatilitätsberechnung benötigt.
+ * @param {Array<number>} prices - Die Preisdaten.
+ * @returns {Array<number>} Ein Array der logarithmischen Renditen.
+ */
 function calculateDailyReturns(prices) {
     let returns = [];
     for (let i = 1; i < prices.length; i++) returns.push(Math.log(prices[i] / prices[i - 1]));
@@ -85,6 +114,12 @@ function calculateDailyReturns(prices) {
 }
 
 // Berechnet Standardabweichung
+/**
+ * Berechnet die Standardabweichung (Volatilität) einer Datenreihe.
+ * Wird verwendet, um das Risiko eines Wertpapiers einzuschätzen.
+ * @param {Array<number>} data - Die Rendite-Daten.
+ * @returns {number} Die Standardabweichung.
+ */
 function calculateStdDev(data) {
     if (data.length === 0) return 0;
     const mean = data.reduce((a, b) => a + b, 0) / data.length;

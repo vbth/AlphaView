@@ -37,6 +37,12 @@ const rangeBtns = document.querySelectorAll('.chart-range-btn');
 
 // --- LEBENSZYKLUS & KERNLOGIK ---
 
+/**
+ * Lädt die Hauptansicht des Dashboards.
+ * Liest die Watchlist, prüft auf leeren Zustand, lädt aktuelle Marktdaten
+ * und stößt das Rendering an.
+ * Aktualisiert zudem die UI der Zeitfenster-Buttons.
+ */
 async function loadDashboard() {
     const watchlist = getWatchlist();
     const gridEl = document.getElementById('dashboard-grid');
@@ -76,6 +82,16 @@ async function loadDashboard() {
     }
 }
 
+/**
+ * Ruft die Portfolio-Daten für alle Symbole in der Watchlist ab.
+ * Holt zusätzlich den aktuellen EUR/USD-Wechselkurs.
+ * Führt für jedes Asset eine Analyse durch und ergänzt fehlende URLs.
+ * Sammelt Fehler-Ergebnisse separat, um das UI nicht zu blockieren.
+ * 
+ * @param {Array} watchlist - Liste der zu ladenden Assets.
+ * @param {string} dashboardRange - Der anzuzeigende Zeitraum (z.B. '1d', '1y').
+ * @returns {Promise<Array>} Liste der Analyse-Ergebnisse (und Fehler).
+ */
 async function fetchPortfolioData(watchlist, dashboardRange) {
     try {
         let rateData = null;
@@ -136,6 +152,11 @@ async function fetchPortfolioData(watchlist, dashboardRange) {
 
 // --- UI-RENDERING ---
 
+/**
+ * Rendert das Grid mit den Aktien-Karten (Stock Cards).
+ * Berechnet Gesamtsummen (EUR/USD) und sortiert die Liste basierend auf den Einstellungen.
+ * Aktualisiert die Header-Statistiken.
+ */
 function renderDashboardGrid() {
     const gridEl = document.getElementById('dashboard-grid');
     const totalEurEl = document.getElementById('total-balance-eur');
@@ -189,6 +210,11 @@ function renderDashboardGrid() {
     }).join('');
 }
 
+/**
+ * Initialisiert Event-Listener für das Dashboard-Grid (Delegation).
+ * Behandelt Klicks auf 'Löschen', 'Karten' (öffnen Modal) und Änderungen an Inputs (Stückzahl/URL).
+ * Verhindert Event-Bubbling bei Klicks auf interaktive Elemente.
+ */
 function initDashboardEvents() {
     const gridEl = document.getElementById('dashboard-grid');
     if (!gridEl) return;
@@ -253,6 +279,11 @@ function initDashboardEvents() {
     });
 }
 
+/**
+ * Öffnet das Detail-Modal für ein bestimmtes Asset.
+ * Setzt den Modal-Status zurück, lädt Chart-Daten und zeigt das Modal an.
+ * @param {string} symbol - Das anzuzeigende Tickersymbol.
+ */
 async function openModal(symbol) {
     if (!modal) return;
     state.currentSymbol = symbol;
@@ -269,7 +300,14 @@ async function openModal(symbol) {
     updateRangeButtonsUI('1y');
     await loadChartForModal(symbol, '1y');
 }
+/**
+ * Schließt das Chart-Modal und setzt die aktuelle Selektion zurück.
+ */
 function closeModal() { if (modal) modal.classList.add('hidden'); state.currentSymbol = null; }
+/**
+ * Aktualisiert die "Active"-Klasse der Zeitbereichs-Buttons im Modal.
+ * @param {string} activeRange - Der aktuell gewählte Zeitraum.
+ */
 function updateRangeButtonsUI(activeRange) {
     rangeBtns.forEach(btn => {
         const range = btn.dataset.range;
@@ -282,6 +320,13 @@ function updateRangeButtonsUI(activeRange) {
         }
     });
 }
+/**
+ * Lädt die Chart-Daten für das Modal und rendert den Chart.
+ * Wählt das passende Daten-Intervall basierend auf dem gewählten Zeitraum.
+ * Aktualisiert Metadaten im Modal (Trend, Volatilität, Börse).
+ * @param {string} symbol - Das Symbol.
+ * @param {string} requestedRange - Der gewünschte Zeitraum (z.B. '5y').
+ */
 async function loadChartForModal(symbol, requestedRange) {
     const canvasId = 'main-chart';
     const canvas = document.getElementById(canvasId);
@@ -336,6 +381,11 @@ rangeBtns.forEach(btn => {
 
 // --- SUCHE ---
 
+/**
+ * Initialisiert die Suchfunktion im Header.
+ * Behandelt Eingabe-Debouncing, API-Suche und Auswahl von Ergebnissen.
+ * Schließt Ergebnisse bei Klick außerhalb.
+ */
 function initSearch() {
     const input = document.getElementById('header-search-input');
     const resultsContainer = document.getElementById('header-search-results');
@@ -391,6 +441,10 @@ function initSearch() {
 
 // --- DATEN-MANAGEMENT & EXPORTE ---
 
+/**
+ * Initialisiert Export- und Import-Funktionen für das Portfolio (JSON).
+ * Behandelt Datei-Upload und Download.
+ */
 function initDataManagement() {
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
@@ -439,6 +493,10 @@ function initDataManagement() {
     }
 }
 
+/**
+ * Initialisiert die Funktionen zum Kopieren von Analysedaten in die Zwischenablage.
+ * Bietet zwei Modi: "AI Context" (Zusammenfassung) und "Research Links" (MarketWatch).
+ */
 function initCopyFeatures() {
     const copyBtn = document.getElementById('copy-list-btn');
     const copyUrlsBtn = document.getElementById('copy-urls-btn');
@@ -514,6 +572,10 @@ function initCopyFeatures() {
     }
 }
 
+/**
+ * Initialisiert die Sortier-Buttons im Dashboard-Header.
+ * Erlaubt Umschalten zwischen Name, Wert, Anteil und Performance (auf/ab).
+ */
 function initSorting() {
     document.querySelectorAll('.sort-btn').forEach(btn => {
         btn.addEventListener('click', () => {

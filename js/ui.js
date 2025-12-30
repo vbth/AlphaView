@@ -5,16 +5,34 @@
  */
 import { ASSET_TYPES, DEFAULT_ASSET_STYLE } from './config.js';
 
+/**
+ * Formatiert Geldbeträge lokalisiert.
+ * Nutzt Intl.NumberFormat für korrekte Währungsdarstellung.
+ * @param {number} val - Der Betrag.
+ * @param {string} currency - Die Währung ('EUR' oder andere).
+ * @returns {string} Formatierter String.
+ */
 export const formatMoney = (val, currency) => {
     const locale = (currency === 'EUR') ? 'de-DE' : 'en-US';
     return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
 };
 
+/**
+ * Formatiert Prozentwerte mit Vorzeichen und zwei Dezimalstellen.
+ * @param {number} val - Der Prozentwert (z.B. 12.345).
+ * @returns {string} Formatierter String (z.B. "+12,35%").
+ */
 const formatPercent = (val) => {
     const sign = val >= 0 ? '+' : '';
     return `${sign}${val.toFixed(2).replace('.', ',')}%`;
 };
 
+/**
+ * Aktualisiert den visuellen Zustand der Sortier-Buttons im Header.
+ * Hebt das aktive Sortierfeld und die Richtung (Auf/Ab) hervor.
+ * @param {string} activeField - Das aktuell sortierte Feld (z.B. 'value').
+ * @param {string} direction - Die Sortierrichtung ('asc' oder 'desc').
+ */
 export function updateSortUI(activeField, direction) {
     document.querySelectorAll('.sort-btn').forEach(btn => {
         const icon = btn.querySelector('i');
@@ -31,6 +49,11 @@ export function updateSortUI(activeField, direction) {
     });
 }
 
+/**
+ * Erzeugt das HTML-Grundgerüst für die App (Header, Stats, Toolbar, Grid).
+ * Wird einmalig beim Start in das Root-Element injiziert.
+ * @param {HTMLElement} container - Das Ziel-Element (i.d.R. #app-root).
+ */
 export function renderAppSkeleton(container) {
     container.innerHTML = `
         <!-- HEADER STATISTIKEN -->
@@ -83,6 +106,17 @@ export function renderAppSkeleton(container) {
     `;
 }
 
+/**
+ * Erstellt das HTML für eine einzelne Aktien-Karte (Stock Card).
+ * Berechnet Positionswerte und Gewichtung für die Anzeige.
+ * @param {Object} data - Das Analysedaten-Objekt des Assets.
+ * @param {number} qty - Die gehaltene Stückzahl.
+ * @param {string} url - Benutzerdefinierter Info-Link.
+ * @param {string} extraUrl - Zweiter Benutzer-Link.
+ * @param {number} totalPortfolioValueEUR - Gesamtwert des Portfolios (für %-Anteil).
+ * @param {number} eurUsdRate - Aktueller EUR/USD Wechselkurs.
+ * @returns {string} Der HTML-String der Karte.
+ */
 export function createStockCardHTML(data, qty, url, extraUrl, totalPortfolioValueEUR, eurUsdRate) {
     const isUp = data.change >= 0;
     const positionValueNative = data.price * qty;
@@ -101,6 +135,12 @@ export function createStockCardHTML(data, qty, url, extraUrl, totalPortfolioValu
     `;
 }
 
+/**
+ * Interne Hilfsfunktion: Rendert den Kopfbereich einer Karte (Name, Symbol, Preis).
+ * Wählt Badge-Farben basierend auf dem Asset-Typ.
+ * @param {Object} data - Asset-Daten.
+ * @returns {string} HTML-String.
+ */
 function renderCardHeader(data) {
     const rawStyle = ASSET_TYPES[data.type] || DEFAULT_ASSET_STYLE;
     // Fallback falls Label/Farbe fehlt
@@ -137,6 +177,17 @@ function renderCardHeader(data) {
     `;
 }
 
+/**
+ * Interne Hilfsfunktion: Rendert den mittleren Info-Bereich (Inputs, Links, Werte).
+ * Enthält Eingabefelder für Stückzahl und URLs.
+ * @param {Object} data - Asset-Daten.
+ * @param {number} qty - Stückzahl.
+ * @param {string} url - Link 1.
+ * @param {string} extraUrl - Link 2.
+ * @param {number} positionValueNative - Wert in Originalwährung.
+ * @param {number} weightPercent - Anteil am Portfolio in %.
+ * @returns {string} HTML-String.
+ */
 function renderCardInfoBox(data, qty, url, extraUrl, positionValueNative, weightPercent) {
     let extraIcon = 'fa-newspaper';
     let extraPlaceholder = 'News-Link...';
@@ -183,6 +234,12 @@ function renderCardInfoBox(data, qty, url, extraUrl, positionValueNative, weight
     `;
 }
 
+/**
+ * Interne Hilfsfunktion: Rendert den Fußbereich der Karte (Trend, Volatilität, Löschen).
+ * @param {Object} data - Asset-Daten.
+ * @param {boolean} isUp - Ob die Gesamtperformance positiv ist.
+ * @returns {string} HTML-String.
+ */
 function renderCardFooter(data, isUp) {
     const trendIcon = data.trend === 'bullish' ? 'fa-arrow-trend-up' : (data.trend === 'bearish' ? 'fa-arrow-trend-down' : 'fa-minus');
     return `
@@ -199,6 +256,13 @@ function renderCardFooter(data, isUp) {
     `;
 }
 
+/**
+ * Erzeugt eine Fehler-Karte für Assets, die nicht geladen werden konnten.
+ * Erlaubt das Löschen des fehlerhaften Eintrags.
+ * @param {string} symbol - Das Symbol, das Fehler verursacht hat.
+ * @param {string} msg - Die Fehlermeldung.
+ * @returns {string} HTML-String.
+ */
 export function createErrorCardHTML(symbol, msg) {
     return `
         <div class="stock-card relative bg-red-50 dark:bg-red-900/10 rounded-xl shadow-sm border border-red-200 dark:border-red-800 p-5 flex flex-col justify-between" data-symbol="${symbol}" style="min-height: 200px;">
@@ -222,6 +286,12 @@ export function createErrorCardHTML(symbol, msg) {
     `;
 }
 
+/**
+ * Rendert die Suchergebnisse in das Dropdown-Menü.
+ * Erzeugt HTML für jeden Treffer oder eine "Keine Ergebnisse"-Meldung.
+ * @param {Array} results - Liste der gefundenen Assets.
+ * @param {HTMLElement} container - Der Ziel-Container für das HTML.
+ */
 export function renderSearchResults(results, container) {
     if (results.length === 0) {
         container.innerHTML = `<div class="p-4 text-sm text-slate-500 text-center">Keine Ergebnisse.</div>`;
