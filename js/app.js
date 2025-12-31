@@ -349,7 +349,8 @@ async function loadChartForModal(symbol, requestedRange) {
             if (rawData.meta) {
                 if (modalExchange) modalExchange.textContent = rawData.meta.exchangeName || rawData.meta.exchangeTimezoneName || 'N/A';
                 const rawType = rawData.meta.instrumentType || 'EQUITY';
-                if (modalType) modalType.textContent = TYPE_TRANSLATIONS[rawType] || rawType;
+                const typeStyle = ASSET_TYPES[rawType] || DEFAULT_ASSET_STYLE;
+                if (modalType) modalType.textContent = typeStyle.label || rawType;
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if (modalFullname) modalFullname.textContent = fullName;
                 if (analysis) {
