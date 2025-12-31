@@ -109,6 +109,11 @@ async function fetchPortfolioData(watchlist, dashboardRange) {
                 if (!rawData) return null;
 
                 const analysis = analyze(rawData);
+
+                if (!analysis) {
+                    return { symbol: item.symbol, error: true, errorMsg: "Zu wenig Datenpunkte für Analyse." };
+                }
+
                 analysis.qty = item.qty;
                 analysis.url = item.url;
 
@@ -345,12 +350,25 @@ async function loadChartForModal(symbol, requestedRange) {
         const rawData = await fetchChartData(symbol, apiRange, interval);
         if (rawData) {
             const analysis = analyze(rawData);
-            renderChart(canvasId, rawData, requestedRange, analysis);
+            // Initial render without type optimization (will be re-rendered a few lines down once type is parsed)
+            // Or better: parse type first.
+            // We can just call renderChart once below.
+            // Let's defer renderChart until we know the type.
+
             if (rawData.meta) {
                 if (modalExchange) modalExchange.textContent = rawData.meta.exchangeName || rawData.meta.exchangeTimezoneName || 'N/A';
                 const rawType = rawData.meta.instrumentType || 'EQUITY';
+                const isIndex = rawType === 'INDEX';
                 const typeStyle = ASSET_TYPES[rawType] || DEFAULT_ASSET_STYLE;
                 if (modalType) modalType.textContent = typeStyle.label || rawType;
+
+                // Re-Render Chart with type info to handle currency formatting
+                if (isIndex) {
+                    renderChart(canvasId, rawData, requestedRange, analysis, true);
+                } else {
+                    renderChart(canvasId, rawData, requestedRange, analysis, false);
+                }
+
                 const fullName = rawData.meta.longName || rawData.meta.shortName || symbol;
                 if (modalFullname) modalFullname.textContent = fullName;
                 if (analysis) {

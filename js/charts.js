@@ -23,6 +23,10 @@ const formatCurrencyValue = (val, currency) => {
     return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(val);
 };
 
+const formatIndexValue = (val) => {
+    return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(val);
+};
+
 /**
  * Berechnet SMA-Datenpunkte für die Darstellung im Chart.
  * Erzeugt ein Array von Objekten { time, value } kompatibel mit Lightweight Charts.
@@ -101,13 +105,14 @@ function updatePerformance(startVal, endVal) {
  * @param {string} range - Der angeforderte Zeitraum (für Zoom-Logik).
  * @param {Object} analysisData - Zusätzliche Analysedaten (optional).
  */
-export function renderChart(containerId, rawData, range = '1y', analysisData = null) {
+export function renderChart(containerId, rawData, range = '1y', analysisData = null, isIndex = false) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     if (!window.LightweightCharts) {
         console.warn("Warte auf Chart Lib...");
-        setTimeout(() => renderChart(containerId, rawData, range, analysisData), 200);
+        console.warn("Warte auf Chart Lib...");
+        setTimeout(() => renderChart(containerId, rawData, range, analysisData, isIndex), 200);
         return;
     }
 
@@ -195,7 +200,10 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
 
         areaSeries = chart.addAreaSeries({
             lineColor: mainColor, topColor: topColor, bottomColor: bottomColor, lineWidth: 2,
-            priceFormat: { type: 'custom', formatter: price => formatCurrencyValue(price, currentCurrency) },
+            priceFormat: {
+                type: 'custom',
+                formatter: price => isIndex ? formatIndexValue(price) : formatCurrencyValue(price, currentCurrency)
+            },
         });
         areaSeries.setData(cleanData);
 
@@ -239,7 +247,7 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
                 else dateStr = dateObj.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
                 if (price) {
-                    const priceStr = formatCurrencyValue(price.value || price, currentCurrency);
+                    const priceStr = isIndex ? formatIndexValue(price.value || price) : formatCurrencyValue(price.value || price, currentCurrency);
                     toolTip.innerHTML = `<div style="font-weight: 600">${priceStr}</div><div style="opacity:0.7">${dateStr}</div>`;
                     let left = param.point.x + 15;
                     let top = param.point.y + 15;

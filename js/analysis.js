@@ -19,7 +19,7 @@ export function analyze(chartResult) {
     const meta = chartResult.meta;
 
     // Ohne Preise keine Analyse
-    if (!prices || prices.length < 2) return null;
+    if (!prices || prices.length < 1) return null;
 
     const currentPrice = prices[prices.length - 1];
 
@@ -34,7 +34,10 @@ export function analyze(chartResult) {
     }
 
     const change = currentPrice - refPrice;
-    const changePercent = (refPrice !== 0) ? (change / refPrice) * 100 : 0;
+    // Wenn nur 1 Datenpunkt und keine Vorjahresdaten: Change ist 0
+    if (prices.length === 1 && !meta.chartPreviousClose) refPrice = currentPrice;
+
+    const changePercent = (refPrice !== 0 && refPrice !== currentPrice) ? (change / refPrice) * 100 : 0;
 
     // Gleitende Durchschnitte (Simple Moving Averages)
     const sma50 = calculateSMA(prices, 50);
