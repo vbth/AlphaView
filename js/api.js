@@ -119,7 +119,18 @@ async function tryFetch(symbol, range, interval) {
     if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
         throw new Error('Ungültige Datenstruktur');
     }
-    return data.chart.result[0];
+
+    // VALIDIERUNG: Prüfen, ob echte Datenpunkte (Preise) enthalten sind.
+    // Yahoo liefert manchmal leere Arrays oder Arrays voller 'null' für Intraday bei Fonds.
+    const res = data.chart.result[0];
+    const quote = res.indicators.quote[0];
+    const hasPrices = quote.close && quote.close.some(p => p !== null && p !== undefined);
+
+    if (!hasPrices) {
+        throw new Error('Keine Preisdaten enthalten');
+    }
+
+    return res;
 }
 
 /**
