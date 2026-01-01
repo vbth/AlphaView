@@ -510,9 +510,33 @@ function initDataManagement() {
     if (importBtn && importInput) {
         importBtn.addEventListener('click', () => {
             if (localStorage.getItem('alphaview_portfolio') && localStorage.getItem('alphaview_portfolio') !== '[]') {
-                if (!confirm('Achtung: Dies überschreibt dein aktuelles Depot! Fortfahren?')) return;
+                if (importBtn.dataset.confirmState === 'active') {
+                    // Zweiter Klick -> Ausführen
+                    importInput.click();
+                    // Reset Button State Immediately
+                    importBtn.dataset.confirmState = 'inactive';
+                    importBtn.innerHTML = '<i class="fa-solid fa-file-import"></i> <span>Depot laden</span>';
+                    importBtn.className = 'bg-white dark:bg-dark-surface hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm flex items-center gap-2';
+                } else {
+                    // Erster Klick -> Warnung
+                    const originalHtml = importBtn.innerHTML;
+                    const originalClasses = importBtn.className;
+
+                    importBtn.dataset.confirmState = 'active';
+                    importBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span>Überschreiben?</span>';
+                    importBtn.className = 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm flex items-center gap-2';
+
+                    setTimeout(() => {
+                        if (importBtn.dataset.confirmState === 'active') {
+                            importBtn.dataset.confirmState = 'inactive';
+                            importBtn.innerHTML = originalHtml;
+                            importBtn.className = originalClasses;
+                        }
+                    }, 4000);
+                }
+            } else {
+                importInput.click();
             }
-            importInput.click();
         });
         importInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
