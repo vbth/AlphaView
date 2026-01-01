@@ -7,9 +7,9 @@
 
 // Liste von CORS-Proxies für höhere Ausfallsicherheit
 const PROXIES = [
-    'https://corsproxy.io/?',
     'https://api.allorigins.win/raw?url=',
-    'https://api.codetabs.com/v1/proxy?quest='
+    'https://api.codetabs.com/v1/proxy?quest=',
+    'https://corsproxy.io/?'
 ];
 
 const BASE_URL_V8 = 'https://query1.finance.yahoo.com/v8/finance/chart';
@@ -25,32 +25,45 @@ const BASE_URL_SEARCH = 'https://query1.finance.yahoo.com/v1/finance/search';
  * @throws {Error} Wenn alle Proxies fehlschlagen.
  */
 async function fetchViaProxy(targetUrl) {
+    const MAX_RETRIES = 3;
     let lastError = null;
-    for (const proxyBase of PROXIES) {
-        try {
-            const requestUrl = `${proxyBase}${encodeURIComponent(targetUrl)}`;
-            // Timeout etwas erhöht für langsame Fonds-Daten
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const response = await fetch(requestUrl, { signal: controller.signal });
-            clearTimeout(timeoutId);
-
-            if (!response.ok) throw new Error(`Status ${response.status}`);
-
-            const text = await response.text();
-            if (!text || text.trim().length === 0) throw new Error("Leere Antwort");
-
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        // Versuche alle Proxies in der Liste durch
+        for (const proxyBase of PROXIES) {
             try {
-                return JSON.parse(text);
-            } catch (e) {
-                throw new Error("Kein JSON");
+                const requestUrl = `${proxyBase}${encodeURIComponent(targetUrl)}`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s Timeout
+
+                const response = await fetch(requestUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) throw new Error(`Status ${response.status}`);
+
+                const text = await response.text();
+                if (!text || text.trim().length === 0) throw new Error("Leere Antwort");
+
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    throw new Error("Kein JSON");
+                }
+            } catch (error) {
+                lastError = error;
+                // console.warn(`Proxy ${proxyBase} failed: ${error.message}`);
             }
-        } catch (error) {
-            lastError = error;
+        }
+
+        // Wenn wir hier sind, haben alle Proxies in diesem Versuch versagt.
+        // Wenn es nicht der letzte Versuch ist, warten wir kurz (Exponential Backoff).
+        if (attempt < MAX_RETRIES) {
+            const delay = 1000 * attempt; // 1s, 2s...
+            // console.log(`Alle Proxies fehlgeschlagen. Warte ${delay}ms vor Versuch ${attempt + 1}...`);
+            await new Promise(r => setTimeout(r, delay));
         }
     }
-    throw lastError || new Error('Alle Proxies fehlgeschlagen');
+    throw lastError || new Error('Alle Proxies und Retries fehlgeschlagen');
 }
 
 /**
