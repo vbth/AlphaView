@@ -261,6 +261,17 @@ function initDashboardEvents() {
             return;
         }
 
+        // Retry Button
+        const retryBtn = target.closest('[data-action="retry"]');
+        if (retryBtn) {
+            e.stopPropagation();
+            const sym = retryBtn.dataset.symbol;
+            retryBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
+            // Force re-fetch by calling update (or just reload dashboard, simpler)
+            loadDashboard();
+            return;
+        }
+
         // Klicks auf Karten (Modal), aber nicht auf Inputs/Links
         const card = target.closest('.stock-card');
         if (card && !target.closest('input') && !target.closest('a') && !target.closest('button')) {
@@ -669,6 +680,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initDataManagement();
     initCopyFeatures();
     initDashboardEvents();
+
+    // PROXY WARMUP: Fire a silent request to wake up cold proxies
+    fetchChartData('AAPL', '1d', '1d').then(() => console.log('Proxy Warmup Complete')).catch(() => { });
 
     loadDashboard();
 });

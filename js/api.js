@@ -34,7 +34,7 @@ async function fetchViaProxy(targetUrl) {
             try {
                 const requestUrl = `${proxyBase}${encodeURIComponent(targetUrl)}`;
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s Timeout
+                const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s Fail-Fast Timeout
 
                 const response = await fetch(requestUrl, { signal: controller.signal });
                 clearTimeout(timeoutId);

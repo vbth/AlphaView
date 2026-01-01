@@ -294,9 +294,9 @@ export function createErrorCardHTML(symbol, msg) {
                  <button type="button" class="delete-btn dashboard-action text-red-400 hover:text-red-600 transition-colors flex items-center gap-1.5 px-2 py-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-xs" data-symbol="${symbol}" data-action="delete">
                     <i class="fa-solid fa-trash-can"></i> Entfernen
                 </button>
-                <a href="https://finance.yahoo.com/quote/${symbol}" target="_blank" class="text-red-400 hover:text-red-600 text-xs flex items-center gap-1">
-                    Check YF <i class="fa-solid fa-external-link-alt"></i>
-                </a>
+                <button type="button" class="dashboard-action text-red-500 hover:text-red-700 bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold" data-symbol="${symbol}" data-action="retry">
+                    <i class="fa-solid fa-rotate-right"></i> Retry
+                </button>
             </div>
         </div>
     `;
