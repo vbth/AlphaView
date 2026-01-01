@@ -328,9 +328,9 @@ export function renderDashboardList(data, container, eurUsdRate) {
         const weight = totalEUR > 0 ? (positionValueEUR / totalEUR) * 100 : 0;
 
         html += `
-        <div class="grid grid-cols-12 gap-2 px-2 md:px-6 py-4 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors items-center group stock-card" data-symbol="${item.symbol}">
+        <div class="grid grid-cols-12 gap-1 px-2 md:px-6 py-2 md:py-3 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors items-center group stock-card" data-symbol="${item.symbol}">
             <div class="col-span-4 md:col-span-3 min-w-0">
-                 <div class="font-bold text-slate-900 dark:text-white truncate" title="${item.name}">${item.name}</div>
+                 <div class="font-bold text-slate-900 dark:text-white truncate text-xs md:text-base" title="${item.name}">${item.name}</div>
                  <div class="text-[10px] md:text-xs font-mono text-slate-500 flex gap-2">
                     <span class="truncate">${item.symbol}</span>
                  </div>
@@ -349,7 +349,7 @@ export function renderDashboardList(data, container, eurUsdRate) {
             </div>
 
             <div class="col-span-2 md:col-span-1 flex justify-end">
-                <input type="number" min="0" step="any" class="qty-input dashboard-action w-full md:w-16 text-right text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-1.5 py-1 focus:ring-1 focus:ring-primary outline-none" value="${item.qty}" data-symbol="${item.symbol}" data-action="qty" onclick="event.stopPropagation()">
+                <input type="number" min="0" step="any" class="qty-input dashboard-action w-full md:w-16 text-right text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-1 py-1 focus:ring-1 focus:ring-primary outline-none" value="${item.qty}" data-symbol="${item.symbol}" data-action="qty" onclick="event.stopPropagation()">
             </div>
             
             <div class="hidden md:block md:col-span-1 text-right font-mono text-xs text-slate-500">
