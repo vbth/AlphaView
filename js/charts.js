@@ -118,6 +118,13 @@ export function renderChart(containerId, rawData, range = '1y', analysisData = n
 
     const timestamps = rawData.timestamp;
     const prices = rawData.indicators.quote[0].close;
+
+    // GUARD: Wenn keine Zeitstempel oder Preise da sind (z.B. Meta-Only Fonds), abbrechen.
+    if (!timestamps || !prices) {
+        container.innerHTML = '<div class="text-slate-400 p-10 text-center">Keine historischen Daten verfügbar.</div>';
+        return;
+    }
+
     currentCurrency = rawData.meta.currency || 'USD';
 
     let cleanData = [];
