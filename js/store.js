@@ -54,11 +54,10 @@ export function getWatchlist() {
  * @returns {boolean} True, wenn das Symbol hinzugefügt wurde, False, wenn es bereits existierte.
  */
 export function addSymbol(symbol) {
-    const portfolio = getPortfolio();
-    const upperSymbol = symbol.toUpperCase();
-    if (!portfolio.find(p => p.symbol === upperSymbol)) {
-        portfolio.push({ symbol: upperSymbol, qty: 0, url: '', extraUrl: '' });
-        savePortfolio(portfolio);
+    const list = getPortfolio();
+    if (!list.find(item => item.symbol === symbol)) {
+        list.unshift({ symbol, qty: 0, url: '', extraUrl: '' }); // Add to TOP
+        savePortfolio(list);
         return true;
     }
     return false;

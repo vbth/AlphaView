@@ -67,7 +67,7 @@ export function renderAppSkeleton(container) {
                 <!-- VIEW MODE TOGGLE -->
                 <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
                      <button id="view-mode-grid" class="view-mode-btn px-3 py-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-2 text-xs font-bold bg-white dark:bg-slate-700 shadow-sm">
-                        <i class="fa-solid fa-grid-2"></i> Grid
+                        <i class="fa-solid fa-border-all"></i> Grid
                     </button>
                     <button id="view-mode-list" class="view-mode-btn px-3 py-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-2 text-xs font-bold">
                         <i class="fa-solid fa-list"></i> List
@@ -228,7 +228,7 @@ function renderCardInfoBox(data, qty, url, extraUrl, positionValueNative, weight
         <div class="flex justify-between items-center mb-2">
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-layer-group text-slate-400 text-xs"></i>
-                <label class="text-xs text-slate-600 dark:text-slate-400">Stückzahl</label>
+                <label class="text-xs text-slate-600 dark:text-slate-400">Stück</label>
                 <span class="ml-1 text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono">
                     ${weightPercent.toFixed(2).replace('.', ',')}%
                 </span>
@@ -292,12 +292,12 @@ export function renderDashboardList(data, container, eurUsdRate) {
     // Header
     let html = `
         <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 uppercase tracking-wider">
-            <div class="col-span-4 md:col-span-3">Asset</div>
-            <div class="col-span-2 text-right">Price</div>
-            <div class="col-span-2 text-right">Perf</div>
-            <div class="col-span-2 text-right">Value</div>
-            <div class="col-span-2 md:col-span-1 text-right">Qty</div>
-            <div class="col-span-2 text-right hidden md:block">Action</div>
+            <div class="col-span-4 md:col-span-3">Wertpapier</div>
+            <div class="col-span-2 text-right">Preis</div>
+            <div class="col-span-2 text-right">Performance</div>
+            <div class="col-span-2 text-right">Wert</div>
+            <div class="col-span-2 md:col-span-1 text-right">Stück</div>
+            <div class="col-span-2 text-right hidden md:block">Aktion</div>
         </div>
     `;
 

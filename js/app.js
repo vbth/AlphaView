@@ -177,10 +177,14 @@ function renderDashboardGrid() {
             btnGrid.className = 'view-mode-btn px-3 py-1.5 rounded-md text-primary dark:text-white bg-white dark:bg-slate-700 shadow-sm flex items-center gap-2 text-xs font-bold transition-all';
             btnList.className = 'view-mode-btn px-3 py-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-2 text-xs font-bold';
             gridEl.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+            btnGrid.innerHTML = '<i class="fa-solid fa-border-all"></i> Raster';
+            btnList.innerHTML = '<i class="fa-solid fa-list"></i> Liste';
         } else {
             btnList.className = 'view-mode-btn px-3 py-1.5 rounded-md text-primary dark:text-white bg-white dark:bg-slate-700 shadow-sm flex items-center gap-2 text-xs font-bold transition-all';
             btnGrid.className = 'view-mode-btn px-3 py-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-2 text-xs font-bold';
             gridEl.className = 'flex flex-col w-full';
+            btnGrid.innerHTML = '<i class="fa-solid fa-border-all"></i> Raster';
+            btnList.innerHTML = '<i class="fa-solid fa-list"></i> Liste';
         }
     }
     const totalEurEl = document.getElementById('total-balance-eur');
@@ -267,7 +271,7 @@ function initDashboardEvents() {
 
                 // Set confirm state
                 deleteBtn.dataset.confirmState = 'active';
-                deleteBtn.innerHTML = '<i class="fa-solid fa-check"></i> Bestätigen?';
+                deleteBtn.innerHTML = '<i class="fa-solid fa-check"></i> Entfernen?';
                 deleteBtn.className = 'delete-btn dashboard-action text-white bg-red-600 hover:bg-red-700 flex items-center gap-1.5 px-2 py-1 rounded shadow-sm transition-all';
 
                 // Auto-reset after 3 seconds
@@ -515,6 +519,15 @@ function initSearch() {
                     input.value = '';
                     resultsContainer.classList.add('hidden');
                     loadDashboard();
+
+                    // Auto-Focus newly added item
+                    setTimeout(() => {
+                        const qtyInput = document.querySelector(`input[data-symbol="${val}"]`);
+                        if (qtyInput) {
+                            qtyInput.focus();
+                            qtyInput.select();
+                        }
+                    }, 50);
                 }
             }
         }
@@ -660,7 +673,7 @@ function initCopyFeatures() {
 
             items.sort((a, b) => b.valEur - a.valEur);
 
-            let text = "| Vermögenswert | Symbol | Gewichtung | Wertentwicklung | Volatilität | Trend |\n";
+            let text = "| Wertpapier | Symbol | Gewichtung | Performance | Volatilität | Trend |\n";
             text += "| :--- | :--- | :--- | :--- | :--- | :--- |\n";
 
             items.forEach(i => {
@@ -699,7 +712,7 @@ function initCopyFeatures() {
 
             navigator.clipboard.writeText(text).then(() => {
                 const originalText = copyUrlsBtn.innerHTML;
-                copyUrlsBtn.innerHTML = '<i class="fa-solid fa-check"></i> MW-Links kopiert!';
+                copyUrlsBtn.innerHTML = '<i class="fa-solid fa-check"></i> Links kopiert!';
                 setTimeout(() => copyUrlsBtn.innerHTML = originalText, 2000);
             });
         });
