@@ -7,9 +7,9 @@
 
 // Liste von CORS-Proxies für höhere Ausfallsicherheit
 const PROXIES = [
+    'https://corsproxy.io/?',
     'https://api.allorigins.win/raw?url=',
-    'https://api.codetabs.com/v1/proxy?quest=',
-    'https://corsproxy.io/?'
+    'https://api.codetabs.com/v1/proxy?quest='
 ];
 
 const BASE_URL_V8 = 'https://query1.finance.yahoo.com/v8/finance/chart';
