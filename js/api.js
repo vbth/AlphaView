@@ -126,7 +126,11 @@ async function tryFetch(symbol, range, interval) {
     const quote = res.indicators.quote[0];
     const hasPrices = quote.close && quote.close.some(p => p !== null && p !== undefined);
 
-    if (!hasPrices) {
+    // Wir akzeptieren auch Fälle OHNE historische Kurse, solange wir einen aktuellen Preis in den Metadaten haben.
+    // Das ist wichtig für exotische Fonds (z.B. UIV7.SG), die oft leere Charts liefern.
+    const hasCurrentPrice = res.meta && (res.meta.regularMarketPrice !== undefined || res.meta.chartPreviousClose !== undefined);
+
+    if (!hasPrices && !hasCurrentPrice) {
         throw new Error('Keine Preisdaten enthalten');
     }
 

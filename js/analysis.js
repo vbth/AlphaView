@@ -18,8 +18,27 @@ export function analyze(chartResult) {
     const prices = extractPrices(chartResult);
     const meta = chartResult.meta;
 
-    // Ohne Preise keine Analyse
-    if (!prices || prices.length < 1) return null;
+    // Ohne Preise: Prüfe auf Fallback (nur aktueller Preis aus Meta verfügbar?)
+    // Dies passiert bei Fonds wie UIV7.SG, die keine Historie liefern.
+    if (!prices || prices.length < 1) {
+        if (meta && meta.regularMarketPrice) {
+            return {
+                symbol: meta.symbol,
+                name: meta.shortName || meta.longName || meta.symbol,
+                type: meta.instrumentType || 'EQUITY',
+                price: meta.regularMarketPrice,
+                currency: meta.currency,
+                change: 0,
+                changePercent: 0,
+                trend: 'neutral',
+                volatility: 0,
+                sma50: null,
+                sma200: null,
+                timestamp: new Date().toLocaleTimeString()
+            };
+        }
+        return null;
+    }
 
     const currentPrice = prices[prices.length - 1];
 
