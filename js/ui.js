@@ -98,11 +98,11 @@ export function renderAppSkeleton(container) {
                 <!-- VIEW MODE -->
                 <div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
                 
-                <button id="view-mode-grid" class="view-mode-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1">
-                   <i class="fa-solid fa-border-all"></i> Raster
-                </button>
                 <button id="view-mode-list" class="view-mode-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1">
                     <i class="fa-solid fa-list"></i> Liste
+                </button>
+                <button id="view-mode-grid" class="view-mode-btn px-3 py-1.5 text-xs font-bold rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1">
+                   <i class="fa-solid fa-border-all"></i> Raster
                 </button>
             </div>
         </div>
@@ -229,19 +229,19 @@ function renderCardInfoBox(data, qty, url, extraUrl, positionValueNative, weight
     const qtyRow = isIndex ? '' : `
         <div class="flex justify-between items-center mb-2">
             <div class="flex items-center gap-2">
-                <i class="fa-solid fa-layer-group text-slate-400 text-xs"></i>
-                <label class="text-xs text-slate-600 dark:text-slate-400">Stück</label>
-            </div>
-            <input type="number" min="0" step="any" class="qty-input dashboard-action w-24 text-right text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 focus:ring-2 focus:ring-primary outline-none" value="${qty}" data-symbol="${data.symbol}" data-action="qty" placeholder="0">
-        </div>
-        <div class="flex justify-between items-center mb-2">
-            <div class="flex items-center gap-2">
                 <i class="fa-solid fa-chart-pie text-slate-400 text-xs"></i>
                 <label class="text-xs text-slate-600 dark:text-slate-400">Anteil</label>
             </div>
             <div class="font-mono text-xs text-slate-900 dark:text-white">
                 ${weightPercent.toFixed(2).replace('.', ',')}%
             </div>
+        </div>
+        <div class="flex justify-between items-center mb-2">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-hashtag text-slate-400 text-xs"></i>
+                <label class="text-xs text-slate-600 dark:text-slate-400">Stück</label>
+            </div>
+            <input type="number" min="0" step="any" class="qty-input dashboard-action w-24 text-right text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 focus:ring-2 focus:ring-primary outline-none" value="${qty}" data-symbol="${data.symbol}" data-action="qty" placeholder="0">
         </div>`;
 
     return `
@@ -278,13 +278,13 @@ function renderCardFooter(data, isUp) {
                 ${(data.trend && data.volatility) ? `
                 <div class="flex items-center gap-1"><i class="fa-solid ${trendIcon}"></i> ${data.trend}</div>
                 <span class="text-slate-300 dark:text-slate-600">•</span>
-                <div>Volatilität ${data.volatility.toFixed(1)}%</div>
+                <div class="flex items-center gap-1"><i class="fa-solid fa-wave-square"></i> Volatilität ${data.volatility.toFixed(1)}%</div>
                 ` : '<span></span>'}
-            </div>
-            <button type="button" class="delete-btn dashboard-action text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1.5 px-2 py-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-xs" data-symbol="${data.symbol}" data-action="delete" title="Entfernen">
-                <i class="fa-solid fa-trash-can"></i> Entfernen
-            </button>
-        </div>
+            </div >
+    <button type="button" class="delete-btn dashboard-action text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1.5 px-2 py-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-xs" data-symbol="${data.symbol}" data-action="delete" title="Entfernen">
+        <i class="fa-solid fa-trash-can"></i> Entfernen
+    </button>
+        </div >
     `;
 }
 
@@ -299,7 +299,7 @@ export function renderDashboardList(data, container, eurUsdRate, totalEUR) {
 
     // Start wrapper
     let html = `
-    <div class="overflow-x-auto w-full">
+    < div class="overflow-x-auto w-full" >
         <table class="w-full text-left border-collapse min-w-[800px]">
             <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                 <tr class="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -307,13 +307,13 @@ export function renderDashboardList(data, container, eurUsdRate, totalEUR) {
                     <th class="px-6 py-3 text-right"><i class="fa-solid fa-tag"></i> Preis</th>
                     <th class="px-6 py-3 text-right"><i class="fa-solid fa-chart-line"></i> Perf.</th>
                     <th class="px-6 py-3 text-right"><i class="fa-solid fa-coins"></i> Wert</th>
+                    <th class="px-6 py-3 text-right"><i class="fa-solid fa-chart-pie"></i> Anteil</th>
                     <th class="px-6 py-3 text-right"><i class="fa-solid fa-hashtag"></i> Stück</th>
-                    <th class="px-6 py-3 text-right"><i class="fa-solid fa-chart-pie"></i> Ant.</th>
                     <th class="px-6 py-3 text-right"><i class="fa-solid fa-bolt"></i></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-    `;
+                `;
 
     // Rows
     data.forEach(item => {
@@ -330,49 +330,49 @@ export function renderDashboardList(data, container, eurUsdRate, totalEUR) {
         const weight = totalEUR > 0 ? (positionValueEUR / totalEUR) * 100 : 0;
 
         html += `
-        <tr class="list-row hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer" data-symbol="${item.symbol}">
-            <td class="px-6 py-4 max-w-[200px]">
-                 <div class="font-bold text-slate-900 dark:text-white truncate" title="${item.name}">${item.name}</div>
-                 <div class="text-xs font-mono text-slate-500 truncate">${item.symbol}</div>
-            </td>
-            
-            <td class="px-6 py-4 text-right font-mono text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                ${formatMoney(item.price, item.currency)}
-            </td>
+                <tr class="list-row hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer" data-symbol="${item.symbol}">
+                    <td class="px-6 py-4 max-w-[200px]">
+                        <div class="font-bold text-slate-900 dark:text-white truncate" title="${item.name}">${item.name}</div>
+                        <div class="text-xs font-mono text-slate-500 truncate">${item.symbol}</div>
+                    </td>
 
-            <td class="px-6 py-4 text-right font-mono text-sm font-medium ${colorClass} whitespace-nowrap">
-                ${formatPercent(item.changePercent)}
-            </td>
+                    <td class="px-6 py-4 text-right font-mono text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        ${formatMoney(item.price, item.currency)}
+                    </td>
 
-            <div class="hidden"></div><!-- Fix for potential parser quirks with template literals inside TR? No, standards allow. -->
+                    <td class="px-6 py-4 text-right font-mono text-sm font-medium ${colorClass} whitespace-nowrap">
+                        ${formatPercent(item.changePercent)}
+                    </td>
 
-            <td class="px-6 py-4 text-right font-mono font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap">
-                ${formatMoney(positionValueNative, item.currency)}
-            </td>
+                    <div class="hidden"></div><!-- Fix for potential parser quirks with template literals inside TR? No, standards allow. -->
 
-            <td class="px-6 py-4 text-right">
-                <div class="flex justify-end">
-                    <input type="number" min="0" step="any" class="qty-input dashboard-action w-16 text-right text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-1 py-1 focus:ring-1 focus:ring-primary outline-none" value="${item.qty}" data-symbol="${item.symbol}" data-action="qty" onclick="event.stopPropagation()">
-                </div>
-            </td>
-            
-            <td class="px-6 py-4 text-right font-mono text-xs text-slate-500 whitespace-nowrap">
-                ${weight.toFixed(1)}%
-            </td>
+                    <td class="px-6 py-4 text-right font-mono font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap">
+                        ${formatMoney(positionValueNative, item.currency)}
+                    </td>
 
-            <td class="px-6 py-4 text-right">
-                <div class="flex justify-end gap-2">
-                    <button type="button" class="delete-btn dashboard-action text-slate-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20" data-symbol="${item.symbol}" data-action="delete" title="Entfernen">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>`;
+                    <td class="px-6 py-4 text-right font-mono text-xs text-slate-500 whitespace-nowrap">
+                        ${weight.toFixed(1)}%
+                    </td>
+
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end">
+                            <input type="number" min="0" step="any" class="qty-input dashboard-action w-16 text-right text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded px-1 py-1 focus:ring-1 focus:ring-primary outline-none" value="${item.qty}" data-symbol="${item.symbol}" data-action="qty" onclick="event.stopPropagation()">
+                        </div>
+                    </td>
+
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="delete-btn dashboard-action text-slate-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20" data-symbol="${item.symbol}" data-action="delete" title="Entfernen">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
     });
 
     html += `   </tbody>
-             </table>
-           </div>`;
+        </table>
+           </div > `;
 
     container.innerHTML = html;
 }
@@ -386,7 +386,7 @@ export function renderDashboardList(data, container, eurUsdRate, totalEUR) {
  */
 export function createErrorCardHTML(symbol, msg) {
     return `
-        <div class="stock-card relative bg-red-50 dark:bg-red-900/10 rounded-xl shadow-sm border border-red-200 dark:border-red-800 p-5 flex flex-col justify-between" data-symbol="${symbol}" style="min-height: 200px;">
+    < div class="stock-card relative bg-red-50 dark:bg-red-900/10 rounded-xl shadow-sm border border-red-200 dark:border-red-800 p-5 flex flex-col justify-between" data - symbol="${symbol}" style = "min-height: 200px;" >
             <div>
                 <div class="flex justify-between items-start mb-2">
                     <h3 class="text-lg font-bold text-red-700 dark:text-red-400 tracking-tight">${symbol}</h3>
@@ -403,7 +403,7 @@ export function createErrorCardHTML(symbol, msg) {
                     <i class="fa-solid fa-rotate-right"></i> Retry
                 </button>
             </div>
-        </div>
+        </div >
     `;
 }
 
@@ -415,7 +415,7 @@ export function createErrorCardHTML(symbol, msg) {
  */
 export function renderSearchResults(results, container) {
     if (results.length === 0) {
-        container.innerHTML = `<div class="p-4 text-sm text-slate-500 text-center">Keine Ergebnisse.</div>`;
+        container.innerHTML = `< div class="p-4 text-sm text-slate-500 text-center" > Keine Ergebnisse.</div > `;
         container.classList.remove('hidden');
         return;
     }
@@ -427,15 +427,15 @@ export function renderSearchResults(results, container) {
         };
 
         return `
-        <div class="search-item px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors group" data-symbol="${item.symbol}">
-            <div class="flex justify-between items-center">
-                <div class="flex-grow min-w-0 mr-4">
-                    <div class="flex items-center gap-2 mb-0.5"><span class="font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap">${item.symbol}</span><span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${badge.color}">${badge.label}</span></div>
-                    <div class="text-xs text-slate-500 truncate" title="${item.name}">${item.name}</div>
-                </div>
-                <div class="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-1 rounded whitespace-nowrap group-hover:bg-white dark:group-hover:bg-slate-600 transition-colors">${item.exchange}</div>
+    < div class="search-item px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors group" data - symbol="${item.symbol}" >
+        <div class="flex justify-between items-center">
+            <div class="flex-grow min-w-0 mr-4">
+                <div class="flex items-center gap-2 mb-0.5"><span class="font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap">${item.symbol}</span><span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${badge.color}">${badge.label}</span></div>
+                <div class="text-xs text-slate-500 truncate" title="${item.name}">${item.name}</div>
             </div>
+            <div class="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-1 rounded whitespace-nowrap group-hover:bg-white dark:group-hover:bg-slate-600 transition-colors">${item.exchange}</div>
         </div>
+        </div >
     `}).join('');
     container.classList.remove('hidden');
 }
