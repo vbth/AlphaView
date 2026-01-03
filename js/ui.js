@@ -214,7 +214,6 @@ function renderCardHeader(data) {
         priceDisplay = formatMoney(data.price, data.currency);
     }
 
-    const tStyle = ASSET_TYPES[data.type] || DEFAULT_ASSET_STYLE;
     const exchangeAbbr = getExchangeAbbr(data.exchange || data.fullExchangeName); // check data source for exchange
 
     return `
